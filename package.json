@@ -1,4 +1,7 @@
 {
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "json-schema-faker": "0.5.0-rcv.24"
+  }
 }
