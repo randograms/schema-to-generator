@@ -5,13 +5,11 @@ const schemaToGenerator = (schema) => {
     throw new Error('A json-schema must be provided');
   }
 
-  const dataGenerator = () => {
-    return jsf.generate(schema);
-  };
+  const dataGenerator = () => jsf.generate(schema);
 
   return dataGenerator;
-}
+};
 
 module.exports = {
   schemaToGenerator,
-}
+};

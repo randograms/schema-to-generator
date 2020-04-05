@@ -1,3 +1,5 @@
+/* eslint-disable global-require */
+
 const chai = require('chai')
   .use(require('sinon-chai'));
 

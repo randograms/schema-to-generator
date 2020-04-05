@@ -2,10 +2,15 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "lint": "eslint --color .",
     "test": "mocha --colors --require ./tests/bootstrap 'tests/unit/**/*.test.js'"
   },
   "dependencies": {
     "chai": "4.2.0",
+    "eslint": "6.8.0",
+    "eslint-config-airbnb-base": "14.1.0",
+    "eslint-plugin-import": "2.20.2",
+    "eslint-plugin-mocha": "6.3.0",
     "json-schema-faker": "0.5.0-rcv.24",
     "mocha": "7.1.1",
     "sinon": "9.0.1",
