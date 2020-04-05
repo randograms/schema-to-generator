@@ -1,0 +1,1 @@
+# schema-to-generator
