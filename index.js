@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const jsf = require('json-schema-faker');
+const schemaValidator = require('./schemaValidator');
 
 const schemaToGenerator = (schema) => {
   if (!schema) {
@@ -31,9 +32,15 @@ const schemaToGenerator = (schema) => {
       throw new Error('Array overrides are not currently supported');
     }
 
-    const mockData = overrideDataType === 'undefined'
-      ? jsf.generate(schema)
-      : override;
+    if (overrideDataType === 'undefined') {
+      return jsf.generate(schema);
+    }
+
+    const mockData = override;
+    const isValid = schemaValidator.validate(schema, mockData);
+    if (!isValid) {
+      throw new Error(schemaValidator.errorsText());
+    }
 
     return mockData;
   };
