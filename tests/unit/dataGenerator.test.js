@@ -55,50 +55,31 @@ describe('dataGenerator', function () {
   });
 
   [
-    ['null', null],
-    ['string', 'test'],
-    ['number', 7],
-    ['integer', 3],
-    ['boolean', true],
-  ].forEach(([type, value]) => {
-    context(`with a "${type}" override`, function () {
+    ['null', 'null', null],
+    ['string', 'string', 'test'],
+    ['integer', 'integer', 3],
+    ['number', 'integer', 4],
+    ['number', 'number', 7.1],
+    ['boolean', 'boolean', true],
+  ].forEach(([schemaType, overrideType, overrideValue]) => {
+    context(`with a "${overrideType}" override on a "${schemaType}" schema`, function () {
       before(function () {
-        this.schema = { type };
+        this.schema = { type: schemaType };
         sandbox.spy(schemaValidator, 'validate');
 
         const dataGenerator = schemaToGenerator(this.schema);
-        this.result = dataGenerator(value);
+        this.result = dataGenerator(overrideValue);
       });
       after(sandbox.restore);
 
       it('validates the override', function () {
         expect(schemaValidator.validate).to.be.called
-          .and.to.be.calledWithExactly(this.schema, value);
+          .and.to.be.calledWithExactly(this.schema, overrideValue);
       });
 
       it('returns the override', function () {
-        expect(this.result).to.equal(value);
+        expect(this.result).to.equal(overrideValue);
       });
-    });
-  });
-
-  context('with an "integer" override on a "number" schema', function () {
-    before(function () {
-      this.schema = { type: 'number' };
-      sandbox.spy(schemaValidator, 'validate');
-
-      const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator(3);
-    });
-    after(sandbox.restore);
-
-    it('validates the override', function () {
-      expect(schemaValidator.validate).to.be.called
-        .and.to.be.calledWithExactly(this.schema, 3);
-    });
-
-    it('returns the override', function () {
-      expect(this.result).to.equal(3);
     });
   });
 
