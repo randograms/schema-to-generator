@@ -6,6 +6,22 @@ const { schemaToGenerator } = require('../../index');
 const sandbox = sinon.createSandbox();
 
 describe('dataGenerator', function () {
+  const setupValidatorStub = () => {
+    before(function () {
+      sinon.spy(schemaValidator, 'validate');
+    });
+    after(function () {
+      schemaValidator.validate.restore();
+    });
+  };
+
+  const itValidatesTheReturnedData = () => {
+    it('validates the returned data', function () {
+      expect(schemaValidator.validate).to.be.called
+        .and.to.be.calledWithExactly(this.schema, this.result);
+    });
+  };
+
   context('without an override', function () {
     before(function () {
       this.returnValue = Symbol('return value');
@@ -63,19 +79,15 @@ describe('dataGenerator', function () {
     ['boolean', 'boolean', true],
   ].forEach(([schemaType, overrideType, overrideValue]) => {
     context(`with a "${overrideType}" override on a "${schemaType}" schema`, function () {
+      setupValidatorStub();
       before(function () {
         this.schema = { type: schemaType };
-        sandbox.spy(schemaValidator, 'validate');
 
         const dataGenerator = schemaToGenerator(this.schema);
         this.result = dataGenerator(overrideValue);
       });
-      after(sandbox.restore);
 
-      it('validates the override', function () {
-        expect(schemaValidator.validate).to.be.called
-          .and.to.be.calledWithExactly(this.schema, overrideValue);
-      });
+      itValidatesTheReturnedData();
 
       it('returns the override', function () {
         expect(this.result).to.equal(overrideValue);
@@ -84,6 +96,7 @@ describe('dataGenerator', function () {
   });
 
   context('with a full object override', function () {
+    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'object',
@@ -97,23 +110,17 @@ describe('dataGenerator', function () {
         ],
       };
 
-      sandbox.spy(schemaValidator, 'validate');
-
       const dataGenerator = schemaToGenerator(this.schema);
-      this.mockData = dataGenerator({
+      this.result = dataGenerator({
         field1: 'abcd',
         field2: 1234,
       });
     });
-    after(sandbox.restore);
 
-    it('validates the returned object', function () {
-      expect(schemaValidator.validate).to.be.called
-        .and.to.be.calledWithExactly(this.schema, this.mockData);
-    });
+    itValidatesTheReturnedData();
 
     it('returns an object with the overridden fields', function () {
-      expect(this.mockData).to.eql({
+      expect(this.result).to.eql({
         field1: 'abcd',
         field2: 1234,
       });
@@ -121,6 +128,7 @@ describe('dataGenerator', function () {
   });
 
   context('with a partial object override', function () {
+    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'object',
@@ -134,19 +142,13 @@ describe('dataGenerator', function () {
         ],
       };
 
-      sandbox.spy(schemaValidator, 'validate');
-
       const dataGenerator = schemaToGenerator(this.schema);
       this.result = dataGenerator({
         field1: 'abcd',
       });
     });
-    after(sandbox.restore);
 
-    it('validates the returned object', function () {
-      expect(schemaValidator.validate).to.be.called
-        .and.to.be.calledWithExactly(this.schema, this.result);
-    });
+    itValidatesTheReturnedData();
 
     it('returns an object with the overridden fields', function () {
       expect(this.result.field1).to.equal('abcd');
@@ -154,23 +156,18 @@ describe('dataGenerator', function () {
   });
 
   context('with an array override', function () {
+    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'array',
         items: { type: 'number' },
       };
 
-      sandbox.spy(schemaValidator, 'validate');
-
       const dataGenerator = schemaToGenerator(this.schema);
       this.result = dataGenerator([1, 2, 3]);
     });
-    after(sandbox.restore);
 
-    it('validates the returned data', function () {
-      expect(schemaValidator.validate).to.be.called
-        .and.to.be.calledWithExactly(this.schema, this.result);
-    });
+    itValidatesTheReturnedData();
 
     it('returns an array', function () {
       expect(this.result).to.eql([1, 2, 3]);
@@ -178,6 +175,7 @@ describe('dataGenerator', function () {
   });
 
   context('with a partial item override on an array schema', function () {
+    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'array',
@@ -194,17 +192,11 @@ describe('dataGenerator', function () {
         },
       };
 
-      sandbox.spy(schemaValidator, 'validate');
-
       const dataGenerator = schemaToGenerator(this.schema);
       this.result = dataGenerator([{ field2: 7 }]);
     });
-    after(sandbox.restore);
 
-    it('validates the returned data', function () {
-      expect(schemaValidator.validate).to.be.called
-        .and.to.be.calledWithExactly(this.schema, this.result);
-    });
+    itValidatesTheReturnedData();
 
     it('returns an array with the overridden object', function () {
       expect(this.result).to.be.an('array');
