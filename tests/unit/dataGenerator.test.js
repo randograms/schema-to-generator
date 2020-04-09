@@ -38,7 +38,18 @@ describe('dataGenerator', function () {
         dataGenerator(1);
       };
 
-      expect(testFn).to.throw('Invalid override type "number" for schema type "string"');
+      expect(testFn).to.throw('Invalid override type "integer" for schema type "string"');
+    });
+  });
+
+  context('with a "number" override on an "integer" schema', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({ type: 'integer' });
+      const testFn = () => {
+        dataGenerator(3.5);
+      };
+
+      expect(testFn).to.throw('Invalid override type "number" for schema type "integer"');
     });
   });
 
@@ -78,6 +89,26 @@ describe('dataGenerator', function () {
       it('returns the override', function () {
         expect(this.result).to.equal(value);
       });
+    });
+  });
+
+  context('with an "integer" override on a "number" schema', function () {
+    before(function () {
+      this.schema = { type: 'number' };
+      sandbox.spy(schemaValidator, 'validate');
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator(3);
+    });
+    after(sandbox.restore);
+
+    it('validates the override', function () {
+      expect(schemaValidator.validate).to.be.called
+        .and.to.be.calledWithExactly(this.schema, 3);
+    });
+
+    it('returns the override', function () {
+      expect(this.result).to.equal(3);
     });
   });
 

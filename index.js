@@ -2,6 +2,19 @@ const _ = require('lodash');
 const jsf = require('json-schema-faker');
 const schemaValidator = require('./schemaValidator');
 
+const getDataType = (data) => {
+  switch (true) {
+    case data === null:
+      return 'null';
+    case _.isArray(data):
+      return 'array';
+    case _.isInteger(data):
+      return 'integer';
+    default:
+      return typeof data;
+  }
+};
+
 const schemaToGenerator = (schema) => {
   if (!schema) {
     throw new Error('A json-schema must be provided');
@@ -16,11 +29,13 @@ const schemaToGenerator = (schema) => {
   }
 
   const dataGenerator = (override) => {
-    const defaultOverrideType = _.isArray(override) ? 'array' : typeof override;
-    const overrideDataType = override === null ? 'null' : defaultOverrideType;
-    const schemaDataType = schema.type === 'integer' ? 'number' : schema.type;
+    const overrideDataType = getDataType(override);
 
-    if (overrideDataType !== 'undefined' && overrideDataType !== schemaDataType) {
+    if (
+      overrideDataType !== 'undefined'
+      && overrideDataType !== schema.type
+      && !(overrideDataType === 'integer' && schema.type === 'number')
+    ) {
       throw new Error(`Invalid override type "${overrideDataType}" for schema type "${schema.type}"`);
     }
 
