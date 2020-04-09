@@ -24,19 +24,19 @@ const schemaToGenerator = (schema) => {
       throw new Error(`Invalid override type "${overrideDataType}" for schema type "${schema.type}"`);
     }
 
-    if (overrideDataType === 'object') {
-      throw new Error('Object overrides are not currently supported');
-    }
-
     if (overrideDataType === 'array') {
       throw new Error('Array overrides are not currently supported');
     }
 
+    const baseData = jsf.generate(schema);
     if (overrideDataType === 'undefined') {
-      return jsf.generate(schema);
+      return baseData;
     }
 
-    const mockData = override;
+    const mockData = overrideDataType === 'object'
+      ? _.merge(baseData, override)
+      : override;
+
     const isValid = schemaValidator.validate(schema, mockData);
     if (!isValid) {
       throw new Error(schemaValidator.errorsText());

@@ -42,17 +42,6 @@ describe('dataGenerator', function () {
     });
   });
 
-  context('with an "object" override', function () {
-    it('throws an error for now', function () {
-      const dataGenerator = schemaToGenerator({ type: 'object' });
-      const testFn = () => {
-        dataGenerator({ field: 'value' });
-      };
-
-      expect(testFn).to.throw('Object overrides are not currently supported');
-    });
-  });
-
   context('with an "array" override', function () {
     it('throws an error for now', function () {
       const dataGenerator = schemaToGenerator({ type: 'array' });
@@ -89,6 +78,76 @@ describe('dataGenerator', function () {
       it('returns the override', function () {
         expect(this.result).to.equal(value);
       });
+    });
+  });
+
+  context('with a full object override', function () {
+    before(function () {
+      this.schema = {
+        type: 'object',
+        properties: {
+          field1: { type: 'string' },
+          field2: { type: 'number' },
+        },
+        required: [
+          'field1',
+          'field2',
+        ],
+      };
+
+      sandbox.spy(schemaValidator, 'validate');
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.mockData = dataGenerator({
+        field1: 'abcd',
+        field2: 1234,
+      });
+    });
+    after(sandbox.restore);
+
+    it('validates the returned object', function () {
+      expect(schemaValidator.validate).to.be.called
+        .and.to.be.calledWithExactly(this.schema, this.mockData);
+    });
+
+    it('returns an object with the overridden fields', function () {
+      expect(this.mockData).to.eql({
+        field1: 'abcd',
+        field2: 1234,
+      });
+    });
+  });
+
+  context('with a partial object override', function () {
+    before(function () {
+      this.schema = {
+        type: 'object',
+        properties: {
+          field1: { type: 'string' },
+          field2: { type: 'number' },
+        },
+        required: [
+          'field1',
+          'field2',
+        ],
+      };
+
+      sandbox.spy(schemaValidator, 'validate');
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator({
+        field1: 'abcd',
+      });
+    });
+    after(sandbox.restore);
+
+    it('validates the returned object', function () {
+      expect(schemaValidator.validate).to.be.called
+        .and.to.be.calledWithExactly(this.schema, this.result);
+    });
+
+    it('returns an object with the overridden fields', function () {
+      expect(this.result.field1).to.equal('abcd');
     });
   });
 
