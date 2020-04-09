@@ -15,6 +15,36 @@ const getDataType = (data) => {
   }
 };
 
+const coerceSchemaToMatchOverride = (schema, override) => {
+  const overrideDataType = getDataType(override);
+
+  if (overrideDataType === 'undefined') {
+    return {
+      overrideDataType,
+      coercedSchema: schema,
+    };
+  }
+
+  if (
+    overrideDataType !== schema.type
+    && !(overrideDataType === 'integer' && schema.type === 'number')
+  ) {
+    throw new Error(`Invalid override type "${overrideDataType}" for schema type "${schema.type}"`);
+  }
+
+  const coercedSchema = { ...schema };
+
+  if (overrideDataType === 'array') {
+    coercedSchema.minItems = override.length;
+    coercedSchema.maxItems = override.length;
+  }
+
+  return {
+    overrideDataType,
+    coercedSchema,
+  };
+};
+
 const schemaToGenerator = (schema) => {
   if (!schema) {
     throw new Error('A json-schema must be provided');
@@ -29,26 +59,18 @@ const schemaToGenerator = (schema) => {
   }
 
   const dataGenerator = (override) => {
-    const overrideDataType = getDataType(override);
+    const {
+      overrideDataType,
+      coercedSchema,
+    } = coerceSchemaToMatchOverride(schema, override);
 
-    if (
-      overrideDataType !== 'undefined'
-      && overrideDataType !== schema.type
-      && !(overrideDataType === 'integer' && schema.type === 'number')
-    ) {
-      throw new Error(`Invalid override type "${overrideDataType}" for schema type "${schema.type}"`);
-    }
-
-    if (overrideDataType === 'array') {
-      throw new Error('Array overrides are not currently supported');
-    }
-
-    const baseData = jsf.generate(schema);
+    const baseData = jsf.generate(coercedSchema);
     if (overrideDataType === 'undefined') {
       return baseData;
     }
 
-    const mockData = overrideDataType === 'object'
+    const isMergeable = overrideDataType === 'object' || overrideDataType === 'array';
+    const mockData = isMergeable
       ? _.merge(baseData, override)
       : override;
 

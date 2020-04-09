@@ -1,4 +1,5 @@
 const jsf = require('json-schema-faker');
+const _ = require('lodash');
 const schemaValidator = require('../../schemaValidator');
 const { schemaToGenerator } = require('../../index');
 
@@ -50,17 +51,6 @@ describe('dataGenerator', function () {
       };
 
       expect(testFn).to.throw('Invalid override type "number" for schema type "integer"');
-    });
-  });
-
-  context('with an "array" override', function () {
-    it('throws an error for now', function () {
-      const dataGenerator = schemaToGenerator({ type: 'array' });
-      const testFn = () => {
-        dataGenerator([1, 2, 3]);
-      };
-
-      expect(testFn).to.throw('Array overrides are not currently supported');
     });
   });
 
@@ -179,6 +169,83 @@ describe('dataGenerator', function () {
 
     it('returns an object with the overridden fields', function () {
       expect(this.result.field1).to.equal('abcd');
+    });
+  });
+
+  context('with an array override', function () {
+    before(function () {
+      this.schema = {
+        type: 'array',
+        items: { type: 'number' },
+      };
+
+      sandbox.spy(schemaValidator, 'validate');
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([1, 2, 3]);
+    });
+    after(sandbox.restore);
+
+    it('validates the returned data', function () {
+      expect(schemaValidator.validate).to.be.called
+        .and.to.be.calledWithExactly(this.schema, this.result);
+    });
+
+    it('returns an array', function () {
+      expect(this.result).to.eql([1, 2, 3]);
+    });
+  });
+
+  context('with a partial item override on an array schema', function () {
+    before(function () {
+      this.schema = {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            field1: { type: 'string' },
+            field2: { type: 'number' },
+          },
+          required: [
+            'field1',
+            'field2',
+          ],
+        },
+      };
+
+      sandbox.spy(schemaValidator, 'validate');
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([{ field2: 7 }]);
+    });
+    after(sandbox.restore);
+
+    it('validates the returned data', function () {
+      expect(schemaValidator.validate).to.be.called
+        .and.to.be.calledWithExactly(this.schema, this.result);
+    });
+
+    it('returns an array with the overridden object', function () {
+      expect(this.result).to.be.an('array');
+      expect(this.result[0].field2).to.equal(7);
+    });
+  });
+
+  context('with array overrides of varying length', function () {
+    before(function () {
+      this.dataGenerator = schemaToGenerator({
+        type: 'array',
+        items: { type: 'number' },
+      });
+    });
+
+    it('always respects the length of the override', function () {
+      [0, 1, 2, 3, 4, 5].forEach((arrayLength) => {
+        const override = _.range(arrayLength);
+        const result = this.dataGenerator(override);
+        expect(result).to.be.an('array')
+          .and.to.have.lengthOf(arrayLength);
+      });
     });
   });
 
