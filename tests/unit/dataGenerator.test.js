@@ -70,6 +70,75 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('when a nested override property does not match the nested schema type', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        type: 'object',
+        properties: {
+          field1: {
+            type: 'object',
+            properties: {
+              field2: { type: 'string' },
+            },
+            required: ['field2'],
+          },
+        },
+        required: ['field1'],
+      });
+      const testFn = () => {
+        dataGenerator({
+          field1: {
+            field2: 7,
+          },
+        });
+      };
+
+      expect(testFn).to.throw('Invalid override.field1.field2 type "integer" for schema type "string"');
+    });
+  });
+
+  context('when a nested array item override does not match the nested schema type', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        type: 'array',
+        items: { type: 'number' },
+      });
+      const testFn = () => {
+        dataGenerator([1, '2', 3]);
+      };
+
+      expect(testFn).to.throw('Invalid override[1] type "string" for schema type "number"');
+    });
+  });
+
+  context('when a deeply nested override value does not match the nested schema type', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        type: 'object',
+        properties: {
+          field1: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                field2: { type: 'string' },
+              },
+              required: ['field2'],
+            },
+          },
+        },
+        required: ['fiedl1'],
+      });
+      const testFn = () => {
+        dataGenerator({
+          field1: [undefined, { field2: 3 }],
+        });
+      };
+
+      expect(testFn).to.throw('Invalid override.field1[1].field2 type "integer" for schema type "string"');
+    });
+  });
+
   [
     ['null', 'null', null],
     ['string', 'string', 'test'],
@@ -316,7 +385,7 @@ describe('dataGenerator', function () {
     });
   });
 
-  context('when the override is not compatible with the schema', function () {
+  context('when the override fails schema validation', function () {
     it('throws an error with the ajv error text', function () {
       const dataGenerator = schemaToGenerator({
         type: 'number',

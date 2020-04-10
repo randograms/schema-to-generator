@@ -15,22 +15,22 @@ const getDataType = (data) => {
   }
 };
 
-const coerceObjectSchema = (schema, override) => ({
+const coerceObjectSchema = (schema, override, schemaPath) => ({
   ...schema,
   properties: _.mapValues(
     schema.properties,
-    (propertySchema, propertyName) => coerceSchemaToMatchOverride(propertySchema, override[propertyName]), // eslint-disable-line no-use-before-define
+    (propertySchema, propertyName) => coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`), // eslint-disable-line no-use-before-define
   ),
 });
 
-const coerceArraySchema = (schema, override) => ({
+const coerceArraySchema = (schema, override, schemaPath) => ({
   ...schema,
-  items: override.map((innerOverride) => coerceSchemaToMatchOverride(schema.items, innerOverride)), // eslint-disable-line no-use-before-define
+  items: override.map((innerOverride, index) => coerceSchemaToMatchOverride(schema.items, innerOverride, `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
   minItems: override.length,
   maxItems: override.length,
 });
 
-const coerceSchemaToMatchOverride = (schema, override) => {
+const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') => {
   const overrideDataType = getDataType(override);
 
   if (overrideDataType === 'undefined') {
@@ -41,18 +41,18 @@ const coerceSchemaToMatchOverride = (schema, override) => {
     overrideDataType !== schema.type
     && !(overrideDataType === 'integer' && schema.type === 'number')
   ) {
-    throw new Error(`Invalid override type "${overrideDataType}" for schema type "${schema.type}"`);
+    throw new Error(`Invalid ${schemaPath} type "${overrideDataType}" for schema type "${schema.type}"`);
   }
 
   let coercedSchema = schema;
   if (overrideDataType === 'object') {
-    coercedSchema = coerceObjectSchema(schema, override);
+    coercedSchema = coerceObjectSchema(schema, override, schemaPath);
   } else if (overrideDataType === 'array') {
     if (_.isArray(schema.items)) {
       throw new Error('Tuple array overrides are not currently supported');
     }
 
-    coercedSchema = coerceArraySchema(schema, override);
+    coercedSchema = coerceArraySchema(schema, override, schemaPath);
   }
 
   return coercedSchema;
