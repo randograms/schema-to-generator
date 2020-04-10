@@ -19,10 +19,7 @@ const coerceSchemaToMatchOverride = (schema, override) => {
   const overrideDataType = getDataType(override);
 
   if (overrideDataType === 'undefined') {
-    return {
-      overrideDataType,
-      coercedSchema: schema,
-    };
+    return schema;
   }
 
   if (
@@ -39,10 +36,7 @@ const coerceSchemaToMatchOverride = (schema, override) => {
     coercedSchema.maxItems = override.length;
   }
 
-  return {
-    overrideDataType,
-    coercedSchema,
-  };
+  return coercedSchema;
 };
 
 const schemaToGenerator = (schema) => {
@@ -59,10 +53,8 @@ const schemaToGenerator = (schema) => {
   }
 
   const dataGenerator = (override) => {
-    const {
-      overrideDataType,
-      coercedSchema,
-    } = coerceSchemaToMatchOverride(schema, override);
+    const overrideDataType = getDataType(override);
+    const coercedSchema = coerceSchemaToMatchOverride(schema, override);
 
     const baseData = jsf.generate(coercedSchema);
     if (overrideDataType === 'undefined') {
