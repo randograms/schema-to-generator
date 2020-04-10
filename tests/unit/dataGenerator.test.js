@@ -164,6 +164,22 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('with a primitive override that matches one of the schema types', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = { type: ['string', 'number', 'boolean'] };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator('test');
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns the override', function () {
+      expect(this.result).to.equal('test');
+    });
+  });
+
   context('with a full object override', function () {
     setupValidatorStub();
     before(function () {
@@ -221,6 +237,39 @@ describe('dataGenerator', function () {
 
     it('returns an object with the overridden fields', function () {
       expect(this.result.field1).to.equal('abcd');
+    });
+  });
+
+  context('with an object override for a nullable schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: ['object', 'null'],
+        properties: {
+          field1: { type: 'string' },
+          field2: { type: 'number' },
+        },
+        required: [
+          'field1',
+          'field2',
+        ],
+      };
+
+      this.dataGenerator = schemaToGenerator(this.schema);
+    });
+
+    it('always returns a complete object with the overridden field', function () {
+      _.times(10, () => {
+        const result = this.dataGenerator({
+          field2: 7.5,
+        });
+
+        expect(schemaValidator.validate).to.be.called
+          .and.to.be.calledWithExactly(this.schema, result);
+
+        expect(result).to.be.an('object');
+        expect(result.field2).to.equal(7.5);
+      });
     });
   });
 
@@ -363,6 +412,29 @@ describe('dataGenerator', function () {
         [1, 2, 3, 4, 5],
         [1],
       ]);
+    });
+  });
+
+  context('with an array override for a nullable schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: ['array', 'null'],
+        items: { type: 'number' },
+      };
+
+      this.dataGenerator = schemaToGenerator(this.schema);
+    });
+
+    it('always returns an array', function () {
+      _.times(10, () => {
+        const result = this.dataGenerator([1, 2, 3]);
+
+        expect(schemaValidator.validate).to.be.called
+          .and.to.be.calledWithExactly(this.schema, result);
+
+        expect(result).to.eql([1, 2, 3]);
+      });
     });
   });
 

@@ -17,6 +17,7 @@ const getDataType = (data) => {
 
 const coerceObjectSchema = (schema, override, schemaPath) => ({
   ...schema,
+  type: 'object',
   properties: _.mapValues(
     schema.properties,
     (propertySchema, propertyName) => coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`), // eslint-disable-line no-use-before-define
@@ -25,6 +26,7 @@ const coerceObjectSchema = (schema, override, schemaPath) => ({
 
 const coerceArraySchema = (schema, override, schemaPath) => ({
   ...schema,
+  type: 'array',
   items: override.map((innerOverride, index) => coerceSchemaToMatchOverride(schema.items, innerOverride, `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
   minItems: override.length,
   maxItems: override.length,
@@ -32,15 +34,15 @@ const coerceArraySchema = (schema, override, schemaPath) => ({
 
 const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') => {
   const overrideDataType = getDataType(override);
+  const schemaTypes = _.castArray(schema.type);
 
   if (overrideDataType === 'undefined') {
     return schema;
   }
 
   if (
-    overrideDataType !== schema.type
-    && !(overrideDataType === 'integer' && schema.type === 'number')
-  ) {
+    !schemaTypes.includes(overrideDataType)
+    && !(overrideDataType === 'integer' && schemaTypes.includes('number'))) {
     throw new Error(`Invalid ${schemaPath} type "${overrideDataType}" for schema type "${schema.type}"`);
   }
 
@@ -63,11 +65,7 @@ const schemaToGenerator = (schema) => {
     throw new Error('A json-schema must be provided');
   }
 
-  if (_.isArray(schema.type)) {
-    throw new Error('Multi-typed schemas are not currently supported');
-  }
-
-  if (!_.isString(schema.type)) {
+  if (!_.isString(schema.type) && !_.isArray(schema.type)) {
     throw new Error('Schemas without a type are not currently supported');
   }
 

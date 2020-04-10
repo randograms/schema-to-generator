@@ -11,18 +11,6 @@ describe('schemaToGenerator', function () {
     });
   });
 
-  context('with a json-schema that supports multiple types', function () {
-    it('throws an error for now', function () {
-      const testFn = () => {
-        schemaToGenerator({
-          type: ['string', 'number'],
-        });
-      };
-
-      expect(testFn).to.throw('Multi-typed schemas are not currently supported');
-    });
-  });
-
   context('with a json-schema that does not have a type', function () {
     it('throws an error for now', function () {
       const testFn = () => {
