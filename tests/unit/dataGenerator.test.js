@@ -297,6 +297,25 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('with a tuple array override', function () {
+    it('throws an error for now', function () {
+      const dataGenerator = schemaToGenerator({
+        type: 'array',
+        items: [
+          { type: 'number' },
+          { type: 'string' },
+          { type: 'boolean' },
+        ],
+      });
+
+      const testFn = () => {
+        dataGenerator([undefined, '2']);
+      };
+
+      expect(testFn).to.throw('Tuple array overrides are not currently supported');
+    });
+  });
+
   context('when the override is not compatible with the schema', function () {
     it('throws an error with the ajv error text', function () {
       const dataGenerator = schemaToGenerator({

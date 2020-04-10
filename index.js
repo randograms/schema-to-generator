@@ -48,6 +48,10 @@ const coerceSchemaToMatchOverride = (schema, override) => {
   if (overrideDataType === 'object') {
     coercedSchema = coerceObjectSchema(schema, override);
   } else if (overrideDataType === 'array') {
+    if (_.isArray(schema.items)) {
+      throw new Error('Tuple array overrides are not currently supported');
+    }
+
     coercedSchema = coerceArraySchema(schema, override);
   }
 
