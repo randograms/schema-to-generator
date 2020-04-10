@@ -222,6 +222,81 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('with nested array overrides on an object schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: 'object',
+        properties: {
+          field1: { type: 'string' },
+          field2: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+          field3: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+          field4: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        },
+        required: [
+          'field1',
+          'field2',
+          'field3',
+          'field4',
+        ],
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator({
+        field2: [1, 2, 3],
+        field3: [1, 2, 3, 4, 5],
+        field4: [1],
+      });
+    });
+
+    itValidatesTheReturnedData();
+
+    it('respects the length of the inner array overrides', function () {
+      expect(this.result.field2).to.eql([1, 2, 3]);
+      expect(this.result.field3).to.eql([1, 2, 3, 4, 5]);
+      expect(this.result.field4).to.eql([1]);
+    });
+  });
+
+  context('with nested array overrides on an array schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: 'array',
+        items: {
+          type: 'array',
+          items: { type: 'number' },
+        },
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([
+        [1, 2, 3],
+        [1, 2, 3, 4, 5],
+        [1],
+      ]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('respects the length of the inner array overrides', function () {
+      expect(this.result).to.eql([
+        [1, 2, 3],
+        [1, 2, 3, 4, 5],
+        [1],
+      ]);
+    });
+  });
+
   context('when the override is not compatible with the schema', function () {
     it('throws an error with the ajv error text', function () {
       const dataGenerator = schemaToGenerator({

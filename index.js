@@ -15,6 +15,21 @@ const getDataType = (data) => {
   }
 };
 
+const coerceObjectSchema = (schema, override) => ({
+  ...schema,
+  properties: _.mapValues(
+    schema.properties,
+    (propertySchema, propertyName) => coerceSchemaToMatchOverride(propertySchema, override[propertyName]), // eslint-disable-line no-use-before-define
+  ),
+});
+
+const coerceArraySchema = (schema, override) => ({
+  ...schema,
+  items: override.map((innerOverride) => coerceSchemaToMatchOverride(schema.items, innerOverride)), // eslint-disable-line no-use-before-define
+  minItems: override.length,
+  maxItems: override.length,
+});
+
 const coerceSchemaToMatchOverride = (schema, override) => {
   const overrideDataType = getDataType(override);
 
@@ -29,11 +44,11 @@ const coerceSchemaToMatchOverride = (schema, override) => {
     throw new Error(`Invalid override type "${overrideDataType}" for schema type "${schema.type}"`);
   }
 
-  const coercedSchema = { ...schema };
-
-  if (overrideDataType === 'array') {
-    coercedSchema.minItems = override.length;
-    coercedSchema.maxItems = override.length;
+  let coercedSchema = schema;
+  if (overrideDataType === 'object') {
+    coercedSchema = coerceObjectSchema(schema, override);
+  } else if (overrideDataType === 'array') {
+    coercedSchema = coerceArraySchema(schema, override);
   }
 
   return coercedSchema;

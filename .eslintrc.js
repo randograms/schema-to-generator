@@ -16,6 +16,18 @@ module.exports = {
         ],
       },
     ],
+    'max-len': [
+      'error',
+      120,
+      2,
+      {
+        ignoreUrls: true,
+        ignoreComments: true,
+        ignoreRegExpLiterals: true,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+      },
+    ],
     'require-await': 'error',
   },
 };
