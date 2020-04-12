@@ -178,6 +178,29 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('when a nested oneOf override does not match any of the schema types', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        oneOf: [
+          {
+            type: 'array',
+            items: { type: 'string' },
+          },
+          {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        ],
+      });
+      const testFn = () => {
+        dataGenerator([2, true]);
+      };
+
+      expect(testFn).to.throw('Invalid override<oneOf[0]>[0] type "integer" for schema type "string", Invalid override<oneOf[1]>[1] type "boolean" for schema type "number"');
+    });
+  });
+
+
   context('when a deeply nested override value does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -612,6 +635,36 @@ describe('dataGenerator', function () {
           {
             type: 'array',
             items: { type: 'string' },
+          },
+        ],
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([1, 2]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns data with the overridden values', function () {
+      expect(this.result).to.eql([1, 2]);
+    });
+  });
+
+  context('with an override on a "oneOf" schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        oneOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'number',
+              minimum: 5,
+            },
+          },
+          {
+            type: 'array',
+            items: { type: 'integer' },
           },
         ],
       };

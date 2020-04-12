@@ -42,10 +42,10 @@ const coerceAllOf = (allOf, override, schemaPath) => (
   allOf.map((innerSchema, index) => coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<allOf[${index}]>`)) // eslint-disable-line no-use-before-define
 );
 
-const coerceAnyOf = (anyOf, override, schemaPath) => {
-  const coercedInnerSchemas = anyOf.map((innerSchema, index) => {
+const coerceValidInnerSchemas = (allInnerSchemas, override, schemaPath, schemaPathKey) => {
+  const coercedInnerSchemas = allInnerSchemas.map((innerSchema, index) => {
     try {
-      return coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<anyOf[${index}]>`); // eslint-disable-line no-use-before-define
+      return coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<${schemaPathKey}[${index}]>`); // eslint-disable-line no-use-before-define
     } catch (error) {
       return error;
     }
@@ -90,7 +90,11 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
   }
 
   if (coercedSchema.anyOf !== undefined) {
-    coercedSchema.anyOf = coerceAnyOf(coercedSchema.anyOf, override, schemaPath);
+    coercedSchema.anyOf = coerceValidInnerSchemas(coercedSchema.anyOf, override, schemaPath, 'anyOf');
+  }
+
+  if (coercedSchema.oneOf !== undefined) {
+    coercedSchema.oneOf = coerceValidInnerSchemas(coercedSchema.oneOf, override, schemaPath, 'oneOf');
   }
 
   return coercedSchema;
