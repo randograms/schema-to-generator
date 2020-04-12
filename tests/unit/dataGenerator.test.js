@@ -754,7 +754,48 @@ describe('dataGenerator', function () {
     });
   });
 
-  describe('immutability', function () {
+  context('without the immutable option', function () {
+    context('with an object schema', function () {
+      before(function () {
+        const schema = {
+          type: 'object',
+          properties: {
+            field1: { type: 'string' },
+          },
+          required: ['field1'],
+        };
+
+        const dataGenerator = schemaToGenerator(schema);
+        this.result = dataGenerator({ field1: 'hi' });
+        this.result.field1 = 'hello';
+      });
+
+      it('returns an object that can be mutated', function () {
+        expect(this.result).to.eql({
+          field1: 'hello',
+        });
+      });
+    });
+
+    context('with an array schema', function () {
+      before(function () {
+        const schema = {
+          type: 'array',
+          items: { type: 'number' },
+        };
+
+        const dataGenerator = schemaToGenerator(schema);
+        this.result = dataGenerator([1, 2, 3]);
+        this.result.push(4);
+      });
+
+      it('returns an array that can be mutated', function () {
+        expect(this.result).to.eql([1, 2, 3, 4]);
+      });
+    });
+  });
+
+  context('with the immutable option', function () {
     context('with an object schema', function () {
       before(function () {
         const schema = {
@@ -771,7 +812,7 @@ describe('dataGenerator', function () {
           required: ['field1'],
         };
 
-        const dataGenerator = schemaToGenerator(schema);
+        const dataGenerator = schemaToGenerator(schema, { immutable: true });
         this.result = dataGenerator({
           field1: ['hello', 3],
         });
@@ -808,7 +849,7 @@ describe('dataGenerator', function () {
           ],
         };
 
-        const dataGenerator = schemaToGenerator(schema);
+        const dataGenerator = schemaToGenerator(schema, { immutable: true });
         this.result = dataGenerator([
           undefined,
           undefined,

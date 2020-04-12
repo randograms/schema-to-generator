@@ -104,7 +104,7 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
   return coercedSchema;
 };
 
-const schemaToGenerator = (schema) => {
+const schemaToGenerator = (schema, { immutable = false } = {}) => {
   if (!schema) {
     throw new Error('A json-schema must be provided');
   }
@@ -129,7 +129,7 @@ const schemaToGenerator = (schema) => {
       throw new Error(schemaValidator.errorsText());
     }
 
-    if (mockData !== null && typeof mockData === 'object') {
+    if (immutable && mockData !== null && typeof mockData === 'object') {
       return deepFreeze(mockData);
     }
 
