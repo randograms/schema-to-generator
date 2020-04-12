@@ -26,7 +26,7 @@ describe('dataGenerator', function () {
     before(function () {
       this.returnValue = Symbol('return value');
       sandbox.stub(jsf, 'generate').returns(this.returnValue);
-      sandbox.spy(schemaValidator, 'validate');
+      sandbox.stub(schemaValidator, 'validate').returns(true);
 
       this.schema = { type: 'string' };
       const dataGenerator = schemaToGenerator(this.schema);
@@ -39,8 +39,9 @@ describe('dataGenerator', function () {
         .and.to.be.calledWithExactly(this.schema);
     });
 
-    it('does not validate the data', function () {
-      expect(schemaValidator.validate).to.not.be.called;
+    it('validates the data', function () {
+      expect(schemaValidator.validate).to.be.called
+        .and.to.be.calledWithExactly(this.schema, this.returnValue);
     });
 
     it('returns the generated data', function () {
@@ -750,6 +751,83 @@ describe('dataGenerator', function () {
       };
 
       expect(testFn).to.throw('data should be <= 3');
+    });
+  });
+
+  describe('immutability', function () {
+    context('with an object schema', function () {
+      before(function () {
+        const schema = {
+          type: 'object',
+          properties: {
+            field1: {
+              type: 'array',
+              items: [
+                { type: 'string' },
+                { type: 'number' },
+              ],
+            },
+          },
+          required: ['field1'],
+        };
+
+        const dataGenerator = schemaToGenerator(schema);
+        this.result = dataGenerator({
+          field1: ['hello', 3],
+        });
+      });
+
+      it('does not allow the object to be mutated', function () {
+        this.result.field1 = [1, 2, 3];
+        expect(this.result.field1).eql(['hello', 3]);
+      });
+
+      it('does not allow nested data to be mutated', function () {
+        const testFn = () => {
+          this.result.field1.push(10);
+        };
+
+        expect(testFn).to.throw('Cannot add property 2, object is not extensible');
+      });
+    });
+
+    context('with an array schema', function () {
+      before(function () {
+        const schema = {
+          type: 'array',
+          items: [
+            { type: 'string' },
+            { type: 'number' },
+            {
+              type: 'object',
+              properties: {
+                field1: { type: 'string' },
+              },
+              required: ['field1'],
+            },
+          ],
+        };
+
+        const dataGenerator = schemaToGenerator(schema);
+        this.result = dataGenerator([
+          undefined,
+          undefined,
+          { field1: 'hello' },
+        ]);
+      });
+
+      it('does not allow the array to be mutated', function () {
+        const testFn = () => {
+          this.result.push(10);
+        };
+
+        expect(testFn).to.throw('Cannot add property 3, object is not extensible');
+      });
+
+      it('does not allow nested data to be mutated', function () {
+        this.result[2].field1 = 7;
+        expect(this.result[2].field1).to.equal('hello');
+      });
     });
   });
 });

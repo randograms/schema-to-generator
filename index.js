@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const jsf = require('json-schema-faker');
+const deepFreeze = require('deep-freeze');
 const schemaValidator = require('./schemaValidator');
 
 const getDataType = (data) => {
@@ -111,20 +112,25 @@ const schemaToGenerator = (schema) => {
   const dataGenerator = (override) => {
     const overrideDataType = getDataType(override);
     const coercedSchema = coerceSchemaToMatchOverride(schema, override);
-
     const baseData = jsf.generate(coercedSchema);
-    if (overrideDataType === 'undefined') {
-      return baseData;
-    }
-
     const isMergeable = overrideDataType === 'object' || overrideDataType === 'array';
-    const mockData = isMergeable
-      ? _.merge(baseData, override)
-      : override;
+
+    let mockData;
+    if (overrideDataType === 'undefined') {
+      mockData = baseData;
+    } else if (isMergeable) {
+      mockData = _.merge(baseData, override);
+    } else {
+      mockData = override;
+    }
 
     const isValid = schemaValidator.validate(schema, mockData);
     if (!isValid) {
       throw new Error(schemaValidator.errorsText());
+    }
+
+    if (mockData !== null && typeof mockData === 'object') {
+      return deepFreeze(mockData);
     }
 
     return mockData;
