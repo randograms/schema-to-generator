@@ -139,6 +139,11 @@ const schemaToGenerator = (schema, { immutable = false } = {}) => {
   return dataGenerator;
 };
 
+const schemasToGenerators = (schemas, { immutable } = {}) => (
+  _.mapValues(schemas, (schema) => schemaToGenerator(schema, { immutable }))
+);
+
 module.exports = {
   schemaToGenerator,
+  schemasToGenerators,
 };
