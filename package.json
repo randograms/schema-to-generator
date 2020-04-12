@@ -1,6 +1,13 @@
 {
+  "name": "@randograms/schema-to-generator",
   "version": "0.0.0",
-  "private": true,
+  "author": "Rachid Lamouri",
+  "main": "index.js",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/randograms/schema-to-generator/issues"
+  },
+  "homepage": "https://github.com/randograms/schema-to-generator",
   "scripts": {
     "lint": "eslint --color .",
     "test": "mocha --colors --require ./tests/bootstrap 'tests/unit/**/*.test.js'"
