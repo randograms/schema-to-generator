@@ -156,6 +156,28 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('when a nested anyOf override does not match any of the schema types', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        anyOf: [
+          {
+            type: 'array',
+            items: { type: 'string' },
+          },
+          {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        ],
+      });
+      const testFn = () => {
+        dataGenerator([2, true]);
+      };
+
+      expect(testFn).to.throw('Invalid override<anyOf[0]>[0] type "integer" for schema type "string", Invalid override<anyOf[1]>[1] type "boolean" for schema type "number"');
+    });
+  });
+
   context('when a deeply nested override value does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -575,6 +597,33 @@ describe('dataGenerator', function () {
 
     it('returns data with the overridden values', function () {
       expect(this.result).to.eql([3, 4, 5]);
+    });
+  });
+
+  context('with an override on an "anyOf" schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        anyOf: [
+          {
+            type: 'array',
+            items: { type: 'number' },
+          },
+          {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        ],
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([1, 2]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns data with the overridden values', function () {
+      expect(this.result).to.eql([1, 2]);
     });
   });
 

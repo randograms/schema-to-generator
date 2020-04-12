@@ -42,6 +42,24 @@ const coerceAllOf = (allOf, override, schemaPath) => (
   allOf.map((innerSchema, index) => coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<allOf[${index}]>`)) // eslint-disable-line no-use-before-define
 );
 
+const coerceAnyOf = (anyOf, override, schemaPath) => {
+  const coercedInnerSchemas = anyOf.map((innerSchema, index) => {
+    try {
+      return coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<anyOf[${index}]>`); // eslint-disable-line no-use-before-define
+    } catch (error) {
+      return error;
+    }
+  });
+
+  const validInnerSchemas = _.reject(coercedInnerSchemas, _.isError);
+  if (validInnerSchemas.length === 0) {
+    const invalidInnerSchemaMessages = _.chain(coercedInnerSchemas).filter(_.isError).map('message').join(', ');
+    throw new Error(invalidInnerSchemaMessages);
+  }
+
+  return validInnerSchemas;
+};
+
 const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') => {
   const overrideDataType = getDataType(override);
   const schemaAllowsAnyType = schema.type === undefined;
@@ -69,6 +87,10 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
 
   if (coercedSchema.allOf !== undefined) {
     coercedSchema.allOf = coerceAllOf(coercedSchema.allOf, override, schemaPath);
+  }
+
+  if (coercedSchema.anyOf !== undefined) {
+    coercedSchema.anyOf = coerceAnyOf(coercedSchema.anyOf, override, schemaPath);
   }
 
   return coercedSchema;
