@@ -38,8 +38,13 @@ const coerceListArraySchema = (schema, override, schemaPath) => ({
   maxItems: override.length,
 });
 
+const coerceAllOf = (allOf, override, schemaPath) => (
+  allOf.map((innerSchema, index) => coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<allOf[${index}]>`)) // eslint-disable-line no-use-before-define
+);
+
 const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') => {
   const overrideDataType = getDataType(override);
+  const schemaAllowsAnyType = schema.type === undefined;
   const schemaTypes = _.castArray(schema.type);
 
   if (overrideDataType === 'undefined') {
@@ -47,18 +52,23 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
   }
 
   if (
-    !schemaTypes.includes(overrideDataType)
+    !schemaAllowsAnyType
+    && !schemaTypes.includes(overrideDataType)
     && !(overrideDataType === 'integer' && schemaTypes.includes('number'))) {
     throw new Error(`Invalid ${schemaPath} type "${overrideDataType}" for schema type "${schema.type}"`);
   }
 
   let coercedSchema = schema;
-  if (overrideDataType === 'object') {
+  if (!schemaAllowsAnyType && overrideDataType === 'object') {
     coercedSchema = coerceObjectSchema(schema, override, schemaPath);
-  } else if (overrideDataType === 'array') {
+  } else if (!schemaAllowsAnyType && overrideDataType === 'array') {
     coercedSchema = _.isArray(schema.items)
       ? coerceTupleArraySchema(schema, override, schemaPath)
       : coerceListArraySchema(schema, override, schemaPath);
+  }
+
+  if (coercedSchema.allOf !== undefined) {
+    coercedSchema.allOf = coerceAllOf(coercedSchema.allOf, override, schemaPath);
   }
 
   return coercedSchema;
@@ -67,10 +77,6 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
 const schemaToGenerator = (schema) => {
   if (!schema) {
     throw new Error('A json-schema must be provided');
-  }
-
-  if (!_.isString(schema.type) && !_.isArray(schema.type)) {
-    throw new Error('Schemas without a type are not currently supported');
   }
 
   const dataGenerator = (override) => {

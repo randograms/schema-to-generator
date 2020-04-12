@@ -128,6 +128,34 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('when a nested allOf override does not match the nested schema type', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        allOf: [
+          {
+            type: 'object',
+            properties: {
+              field: { type: 'string' },
+            },
+            required: ['field1'],
+          },
+          {
+            type: 'object',
+            properties: {
+              field2: { type: 'string' },
+            },
+            required: ['field2'],
+          },
+        ],
+      });
+      const testFn = () => {
+        dataGenerator({ field2: 3 });
+      };
+
+      expect(testFn).to.throw('Invalid override<allOf[1]>.field2 type "integer" for schema type "string"');
+    });
+  });
+
   context('when a deeply nested override value does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -514,6 +542,39 @@ describe('dataGenerator', function () {
 
         expect(result).to.eql([1, 2, 3]);
       });
+    });
+  });
+
+  context('with an override on an "allOf" schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        allOf: [
+          {
+            type: 'array',
+            items: {
+              type: 'number',
+              minimum: 3,
+            },
+          },
+          {
+            type: 'array',
+            items: {
+              type: 'number',
+              maximum: 10,
+            },
+          },
+        ],
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([3, 4, 5]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns data with the overridden values', function () {
+      expect(this.result).to.eql([3, 4, 5]);
     });
   });
 

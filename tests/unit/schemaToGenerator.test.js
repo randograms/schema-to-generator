@@ -11,16 +11,6 @@ describe('schemaToGenerator', function () {
     });
   });
 
-  context('with a json-schema that does not have a type', function () {
-    it('throws an error for now', function () {
-      const testFn = () => {
-        schemaToGenerator({});
-      };
-
-      expect(testFn).to.throw('Schemas without a type are not currently supported');
-    });
-  });
-
   context('with a compatible json-schema', function () {
     it('returns a dataGenerator function', function () {
       const dataGenerator = schemaToGenerator({ type: 'string' });
