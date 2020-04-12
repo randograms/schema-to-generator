@@ -17,7 +17,6 @@ const getDataType = (data) => {
 
 const coerceObjectSchema = (schema, override, schemaPath) => ({
   ...schema,
-  type: 'object',
   properties: _.mapValues(
     schema.properties,
     (propertySchema, propertyName) => coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`), // eslint-disable-line no-use-before-define
@@ -26,13 +25,11 @@ const coerceObjectSchema = (schema, override, schemaPath) => ({
 
 const coerceTupleArraySchema = (schema, override, schemaPath) => ({
   ...schema,
-  type: 'array',
   items: schema.items.map((tupleItemSchema, index) => coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
 });
 
 const coerceListArraySchema = (schema, override, schemaPath) => ({
   ...schema,
-  type: 'array',
   items: override.map((innerOverride, index) => coerceSchemaToMatchOverride(schema.items, innerOverride, `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
   minItems: override.length,
   maxItems: override.length,
@@ -76,13 +73,19 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
     throw new Error(`Invalid ${schemaPath} type "${overrideDataType}" for schema type "${schema.type}"`);
   }
 
-  let coercedSchema = schema;
-  if (!schemaAllowsAnyType && overrideDataType === 'object') {
-    coercedSchema = coerceObjectSchema(schema, override, schemaPath);
-  } else if (!schemaAllowsAnyType && overrideDataType === 'array') {
-    coercedSchema = _.isArray(schema.items)
-      ? coerceTupleArraySchema(schema, override, schemaPath)
-      : coerceListArraySchema(schema, override, schemaPath);
+  let coercedSchema = {
+    ...schema,
+    type: overrideDataType,
+  };
+
+  if (overrideDataType === 'object' && coercedSchema.properties !== undefined) {
+    coercedSchema = coerceObjectSchema(coercedSchema, override, schemaPath);
+  }
+
+  if (overrideDataType === 'array' && schema.items !== undefined) {
+    coercedSchema = _.isArray(coercedSchema.items)
+      ? coerceTupleArraySchema(coercedSchema, override, schemaPath)
+      : coerceListArraySchema(coercedSchema, override, schemaPath);
   }
 
   if (coercedSchema.allOf !== undefined) {

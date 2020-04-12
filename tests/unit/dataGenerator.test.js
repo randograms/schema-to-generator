@@ -596,30 +596,42 @@ describe('dataGenerator', function () {
       this.schema = {
         allOf: [
           {
-            type: 'array',
-            items: {
-              type: 'number',
-              minimum: 3,
+            type: 'object',
+            properties: {
+              field1: {
+                type: 'array',
+                items: { type: 'number' },
+              },
             },
+            required: ['field1'],
           },
           {
-            type: 'array',
-            items: {
-              type: 'number',
-              maximum: 10,
+            type: 'object',
+            properties: {
+              field2: {
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
+            required: ['field2'],
           },
         ],
       };
 
       const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator([3, 4, 5]);
+      this.result = dataGenerator({
+        field1: [1, 2],
+        field2: ['1', '2'],
+      });
     });
 
     itValidatesTheReturnedData();
 
     it('returns data with the overridden values', function () {
-      expect(this.result).to.eql([3, 4, 5]);
+      expect(this.result).to.eql({
+        field1: [1, 2],
+        field2: ['1', '2'],
+      });
     });
   });
 
@@ -677,6 +689,52 @@ describe('dataGenerator', function () {
 
     it('returns data with the overridden values', function () {
       expect(this.result).to.eql([1, 2]);
+    });
+  });
+
+  context('with nested overrides for a schema without types', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        properties: {
+          field1: {
+            items: { type: 'string' },
+          },
+          field2: {
+            items: [
+              { type: 'number' },
+              {
+                items: { type: 'boolean' },
+              },
+            ],
+          },
+        },
+        required: [
+          'field1',
+          'field2',
+        ],
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator({
+        field1: ['1', '2', '3'],
+        field2: [
+          3,
+          [true, false, true],
+        ],
+      });
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns the overridden data', function () {
+      expect(this.result).to.eql({
+        field1: ['1', '2', '3'],
+        field2: [
+          3,
+          [true, false, true],
+        ],
+      });
     });
   });
 
