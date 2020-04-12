@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { red, green, blue } = require('ansi-colors');
 const jsf = require('json-schema-faker');
 const deepFreeze = require('deep-freeze');
 const schemaValidator = require('./schemaValidator');
@@ -126,7 +127,16 @@ const schemaToGenerator = (schema, { immutable = false } = {}) => {
 
     const isValid = schemaValidator.validate(schema, mockData);
     if (!isValid) {
-      throw new Error(schemaValidator.errorsText());
+      const errorMessage = [
+        red('Data Generator Error'),
+        red(`Validation error: ${schemaValidator.errorsText()}`),
+        green('Original Schema'),
+        green(JSON.stringify(schema, null, 2)),
+        red(`Validation error: ${schemaValidator.errorsText()}`),
+        blue('Generated Mock Data'),
+        blue(JSON.stringify(mockData, null, 2)),
+      ].join('\n');
+      throw new Error(errorMessage);
     }
 
     if (immutable && mockData !== null && typeof mockData === 'object') {
