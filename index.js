@@ -32,6 +32,12 @@ const coerceArraySchema = (schema, override, schemaPath) => ({
   maxItems: override.length,
 });
 
+const coerceTupleArraySchema = (schema, override, schemaPath) => ({
+  ...schema,
+  type: 'array',
+  items: schema.items.map((tupleItemSchema, index) => coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
+});
+
 const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') => {
   const overrideDataType = getDataType(override);
   const schemaTypes = _.castArray(schema.type);
@@ -50,11 +56,9 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
   if (overrideDataType === 'object') {
     coercedSchema = coerceObjectSchema(schema, override, schemaPath);
   } else if (overrideDataType === 'array') {
-    if (_.isArray(schema.items)) {
-      throw new Error('Tuple array overrides are not currently supported');
-    }
-
-    coercedSchema = coerceArraySchema(schema, override, schemaPath);
+    coercedSchema = _.isArray(schema.items)
+      ? coerceTupleArraySchema(schema, override, schemaPath)
+      : coerceArraySchema(schema, override, schemaPath);
   }
 
   return coercedSchema;

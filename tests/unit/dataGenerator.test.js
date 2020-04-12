@@ -111,6 +111,23 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('when a nested tuple array item override does not match the nested schema type', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        type: 'array',
+        items: [
+          { type: 'number' },
+          { type: 'string' },
+        ],
+      });
+      const testFn = () => {
+        dataGenerator([1, 2]);
+      };
+
+      expect(testFn).to.throw('Invalid override[1] type "integer" for schema type "string"');
+    });
+  });
+
   context('when a deeply nested override value does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -439,21 +456,64 @@ describe('dataGenerator', function () {
   });
 
   context('with a tuple array override', function () {
-    it('throws an error for now', function () {
-      const dataGenerator = schemaToGenerator({
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
         type: 'array',
+        items: [
+          { type: 'string' },
+          { type: 'integer' },
+          {
+            type: 'object',
+            properties: {
+              field1: { type: 'integer' },
+              field2: { type: 'string' },
+            },
+            required: [
+              'field1',
+              'field2',
+            ],
+          },
+          { type: 'boolean' },
+        ],
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([undefined, 5, { field1: 3 }]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns an array with the overridden data', function () {
+      expect(this.result[1]).to.equal(5);
+      expect(this.result[2].field1).to.equal(3);
+    });
+  });
+
+  context('with a tuple array override for a nullable schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: ['array', 'null'],
         items: [
           { type: 'number' },
           { type: 'string' },
           { type: 'boolean' },
         ],
-      });
-
-      const testFn = () => {
-        dataGenerator([undefined, '2']);
       };
 
-      expect(testFn).to.throw('Tuple array overrides are not currently supported');
+      this.dataGenerator = schemaToGenerator(this.schema);
+    });
+
+    it('always returns an array', function () {
+      _.times(10, () => {
+        const result = this.dataGenerator([1, '2', true]);
+
+        expect(schemaValidator.validate).to.be.called
+          .and.to.be.calledWithExactly(this.schema, result);
+
+        expect(result).to.eql([1, '2', true]);
+      });
     });
   });
 
