@@ -24,18 +24,18 @@ const coerceObjectSchema = (schema, override, schemaPath) => ({
   ),
 });
 
-const coerceArraySchema = (schema, override, schemaPath) => ({
+const coerceTupleArraySchema = (schema, override, schemaPath) => ({
+  ...schema,
+  type: 'array',
+  items: schema.items.map((tupleItemSchema, index) => coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
+});
+
+const coerceListArraySchema = (schema, override, schemaPath) => ({
   ...schema,
   type: 'array',
   items: override.map((innerOverride, index) => coerceSchemaToMatchOverride(schema.items, innerOverride, `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
   minItems: override.length,
   maxItems: override.length,
-});
-
-const coerceTupleArraySchema = (schema, override, schemaPath) => ({
-  ...schema,
-  type: 'array',
-  items: schema.items.map((tupleItemSchema, index) => coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
 });
 
 const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') => {
@@ -58,7 +58,7 @@ const coerceSchemaToMatchOverride = (schema, override, schemaPath = 'override') 
   } else if (overrideDataType === 'array') {
     coercedSchema = _.isArray(schema.items)
       ? coerceTupleArraySchema(schema, override, schemaPath)
-      : coerceArraySchema(schema, override, schemaPath);
+      : coerceListArraySchema(schema, override, schemaPath);
   }
 
   return coercedSchema;

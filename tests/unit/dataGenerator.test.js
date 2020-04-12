@@ -97,20 +97,6 @@ describe('dataGenerator', function () {
     });
   });
 
-  context('when a nested array item override does not match the nested schema type', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        type: 'array',
-        items: { type: 'number' },
-      });
-      const testFn = () => {
-        dataGenerator([1, '2', 3]);
-      };
-
-      expect(testFn).to.throw('Invalid override[1] type "string" for schema type "number"');
-    });
-  });
-
   context('when a nested tuple array item override does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -125,6 +111,20 @@ describe('dataGenerator', function () {
       };
 
       expect(testFn).to.throw('Invalid override[1] type "integer" for schema type "string"');
+    });
+  });
+
+  context('when a nested list array item override does not match the nested schema type', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        type: 'array',
+        items: { type: 'number' },
+      });
+      const testFn = () => {
+        dataGenerator([1, '2', 3]);
+      };
+
+      expect(testFn).to.throw('Invalid override[1] type "string" for schema type "number"');
     });
   });
 
@@ -290,171 +290,6 @@ describe('dataGenerator', function () {
     });
   });
 
-  context('with an array override', function () {
-    setupValidatorStub();
-    before(function () {
-      this.schema = {
-        type: 'array',
-        items: { type: 'number' },
-      };
-
-      const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator([1, 2, 3]);
-    });
-
-    itValidatesTheReturnedData();
-
-    it('returns an array', function () {
-      expect(this.result).to.eql([1, 2, 3]);
-    });
-  });
-
-  context('with a partial item override on an array schema', function () {
-    setupValidatorStub();
-    before(function () {
-      this.schema = {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            field1: { type: 'string' },
-            field2: { type: 'number' },
-          },
-          required: [
-            'field1',
-            'field2',
-          ],
-        },
-      };
-
-      const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator([{ field2: 7 }]);
-    });
-
-    itValidatesTheReturnedData();
-
-    it('returns an array with the overridden object', function () {
-      expect(this.result).to.be.an('array');
-      expect(this.result[0].field2).to.equal(7);
-    });
-  });
-
-  context('with array overrides of varying length', function () {
-    before(function () {
-      this.dataGenerator = schemaToGenerator({
-        type: 'array',
-        items: { type: 'number' },
-      });
-    });
-
-    it('always respects the length of the override', function () {
-      [0, 1, 2, 3, 4, 5].forEach((arrayLength) => {
-        const override = _.range(arrayLength);
-        const result = this.dataGenerator(override);
-        expect(result).to.be.an('array')
-          .and.to.have.lengthOf(arrayLength);
-      });
-    });
-  });
-
-  context('with nested array overrides on an object schema', function () {
-    setupValidatorStub();
-    before(function () {
-      this.schema = {
-        type: 'object',
-        properties: {
-          field1: { type: 'string' },
-          field2: {
-            type: 'array',
-            items: { type: 'number' },
-          },
-          field3: {
-            type: 'array',
-            items: { type: 'number' },
-          },
-          field4: {
-            type: 'array',
-            items: { type: 'number' },
-          },
-        },
-        required: [
-          'field1',
-          'field2',
-          'field3',
-          'field4',
-        ],
-      };
-
-      const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator({
-        field2: [1, 2, 3],
-        field3: [1, 2, 3, 4, 5],
-        field4: [1],
-      });
-    });
-
-    itValidatesTheReturnedData();
-
-    it('respects the length of the inner array overrides', function () {
-      expect(this.result.field2).to.eql([1, 2, 3]);
-      expect(this.result.field3).to.eql([1, 2, 3, 4, 5]);
-      expect(this.result.field4).to.eql([1]);
-    });
-  });
-
-  context('with nested array overrides on an array schema', function () {
-    setupValidatorStub();
-    before(function () {
-      this.schema = {
-        type: 'array',
-        items: {
-          type: 'array',
-          items: { type: 'number' },
-        },
-      };
-
-      const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator([
-        [1, 2, 3],
-        [1, 2, 3, 4, 5],
-        [1],
-      ]);
-    });
-
-    itValidatesTheReturnedData();
-
-    it('respects the length of the inner array overrides', function () {
-      expect(this.result).to.eql([
-        [1, 2, 3],
-        [1, 2, 3, 4, 5],
-        [1],
-      ]);
-    });
-  });
-
-  context('with an array override for a nullable schema', function () {
-    setupValidatorStub();
-    before(function () {
-      this.schema = {
-        type: ['array', 'null'],
-        items: { type: 'number' },
-      };
-
-      this.dataGenerator = schemaToGenerator(this.schema);
-    });
-
-    it('always returns an array', function () {
-      _.times(10, () => {
-        const result = this.dataGenerator([1, 2, 3]);
-
-        expect(schemaValidator.validate).to.be.called
-          .and.to.be.calledWithExactly(this.schema, result);
-
-        expect(result).to.eql([1, 2, 3]);
-      });
-    });
-  });
-
   context('with a tuple array override', function () {
     setupValidatorStub();
     before(function () {
@@ -513,6 +348,171 @@ describe('dataGenerator', function () {
           .and.to.be.calledWithExactly(this.schema, result);
 
         expect(result).to.eql([1, '2', true]);
+      });
+    });
+  });
+
+  context('with a list array override', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: 'array',
+        items: { type: 'number' },
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([1, 2, 3]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns an array', function () {
+      expect(this.result).to.eql([1, 2, 3]);
+    });
+  });
+
+  context('with a partial item override on a list array schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            field1: { type: 'string' },
+            field2: { type: 'number' },
+          },
+          required: [
+            'field1',
+            'field2',
+          ],
+        },
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([{ field2: 7 }]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('returns an array with the overridden object', function () {
+      expect(this.result).to.be.an('array');
+      expect(this.result[0].field2).to.equal(7);
+    });
+  });
+
+  context('with list array overrides of varying length', function () {
+    before(function () {
+      this.dataGenerator = schemaToGenerator({
+        type: 'array',
+        items: { type: 'number' },
+      });
+    });
+
+    it('always respects the length of the override', function () {
+      [0, 1, 2, 3, 4, 5].forEach((arrayLength) => {
+        const override = _.range(arrayLength);
+        const result = this.dataGenerator(override);
+        expect(result).to.be.an('array')
+          .and.to.have.lengthOf(arrayLength);
+      });
+    });
+  });
+
+  context('with nested list array overrides on an object schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: 'object',
+        properties: {
+          field1: { type: 'string' },
+          field2: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+          field3: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+          field4: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        },
+        required: [
+          'field1',
+          'field2',
+          'field3',
+          'field4',
+        ],
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator({
+        field2: [1, 2, 3],
+        field3: [1, 2, 3, 4, 5],
+        field4: [1],
+      });
+    });
+
+    itValidatesTheReturnedData();
+
+    it('respects the length of the inner array overrides', function () {
+      expect(this.result.field2).to.eql([1, 2, 3]);
+      expect(this.result.field3).to.eql([1, 2, 3, 4, 5]);
+      expect(this.result.field4).to.eql([1]);
+    });
+  });
+
+  context('with nested list array overrides on an array schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: 'array',
+        items: {
+          type: 'array',
+          items: { type: 'number' },
+        },
+      };
+
+      const dataGenerator = schemaToGenerator(this.schema);
+      this.result = dataGenerator([
+        [1, 2, 3],
+        [1, 2, 3, 4, 5],
+        [1],
+      ]);
+    });
+
+    itValidatesTheReturnedData();
+
+    it('respects the length of the inner array overrides', function () {
+      expect(this.result).to.eql([
+        [1, 2, 3],
+        [1, 2, 3, 4, 5],
+        [1],
+      ]);
+    });
+  });
+
+  context('with a list array override for a nullable schema', function () {
+    setupValidatorStub();
+    before(function () {
+      this.schema = {
+        type: ['array', 'null'],
+        items: { type: 'number' },
+      };
+
+      this.dataGenerator = schemaToGenerator(this.schema);
+    });
+
+    it('always returns an array', function () {
+      _.times(10, () => {
+        const result = this.dataGenerator([1, 2, 3]);
+
+        expect(schemaValidator.validate).to.be.called
+          .and.to.be.calledWithExactly(this.schema, result);
+
+        expect(result).to.eql([1, 2, 3]);
       });
     });
   });
