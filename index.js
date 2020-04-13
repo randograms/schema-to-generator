@@ -153,7 +153,12 @@ const schemasToGenerators = (schemas, { immutable } = {}) => (
   _.mapValues(schemas, (schema) => schemaToGenerator(schema, { immutable }))
 );
 
+const setJsfPatternHandler = (patternHandler) => {
+  jsf.define('pattern', patternHandler);
+};
+
 module.exports = {
   schemaToGenerator,
   schemasToGenerators,
+  setJsfPatternHandler,
 };
