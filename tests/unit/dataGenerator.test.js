@@ -71,6 +71,28 @@ describe('dataGenerator', function () {
     });
   });
 
+  context('when an object override has additionalProperties', function () {
+    it('throws an error', function () {
+      const dataGenerator = schemaToGenerator({
+        type: 'object',
+        properties: {
+          field1: { type: 'string' },
+        },
+        required: ['field1'],
+        additionalProperties: false,
+      });
+
+      const testFn = () => {
+        dataGenerator({
+          field2: 3,
+          field3: 4,
+        });
+      };
+
+      expect(testFn).to.throw('Invalid additional properties "field2", "field3" on override');
+    });
+  });
+
   context('when a nested override property does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -200,7 +222,6 @@ describe('dataGenerator', function () {
       expect(testFn).to.throw('Invalid override<oneOf[0]>[0] type "integer" for schema type "string", Invalid override<oneOf[1]>[1] type "boolean" for schema type "number"');
     });
   });
-
 
   context('when a deeply nested override value does not match the nested schema type', function () {
     it('throws an error', function () {

@@ -17,13 +17,29 @@ const getDataType = (data) => {
   }
 };
 
-const coerceObjectSchema = (schema, override, schemaPath) => ({
-  ...schema,
-  properties: _.mapValues(
-    schema.properties,
-    (propertySchema, propertyName) => coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`), // eslint-disable-line no-use-before-define
-  ),
-});
+const coerceObjectSchema = (schema, override, schemaPath) => {
+  if (schema.additionalProperties === false) {
+    const invalidAdditionalProperties = (
+      _(override)
+        .keys()
+        .reject((propertyName) => _.has(schema.properties, propertyName))
+        .value()
+    );
+
+    if (invalidAdditionalProperties.length > 0) {
+      const formattedInvalidPropertyNames = invalidAdditionalProperties.map((propertyName) => `"${propertyName}"`).join(', ');
+      throw new Error(`Invalid additional properties ${formattedInvalidPropertyNames} on ${schemaPath}`);
+    }
+  }
+
+  return {
+    ...schema,
+    properties: _.mapValues(
+      schema.properties,
+      (propertySchema, propertyName) => coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`), // eslint-disable-line no-use-before-define
+    ),
+  };
+};
 
 const coerceTupleArraySchema = (schema, override, schemaPath) => ({
   ...schema,
