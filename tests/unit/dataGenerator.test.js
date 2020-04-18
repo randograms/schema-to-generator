@@ -1,6 +1,6 @@
 const jsf = require('json-schema-faker');
 const _ = require('lodash');
-const schemaValidator = require('../../schemaValidator');
+const { schemaValidator } = require('../../lib');
 const { schemaToGenerator } = require('../../index');
 
 const sandbox = sinon.createSandbox();
