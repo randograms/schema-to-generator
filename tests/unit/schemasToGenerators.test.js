@@ -1,53 +1,74 @@
-const { schemasToGenerators } = require('../../index');
+const lib = require('../../lib');
 
-describe('schemasToGenerators', function () {
-  before(function () {
-    this.schemas = {
-      schema1: {
-        type: 'object',
-        properties: {
-          field1: { type: 'string' },
-        },
-        required: ['field1'],
-      },
-      schema2: {
-        type: 'array',
-        items: { type: 'number' },
-      },
-    };
-  });
+const sandbox = sinon.createSandbox();
 
-  context('with schemas keyed by name', function () {
+describe('lib.schemasToGenerators', function () {
+  const setupContext = () => {
     before(function () {
-      this.dataGenerators = schemasToGenerators(this.schemas);
-    });
-
-    it('returns data generators keyed by name', function () {
-      expect(Object.keys(this.dataGenerators)).to.eql([
-        'schema1',
-        'schema2',
-      ]);
-
-      expect(this.dataGenerators.schema1.name).to.equal('dataGenerator');
-      expect(this.dataGenerators.schema2.name).to.equal('dataGenerator');
-    });
-  });
-
-  context('with schemas and options', function () {
-    before(function () {
-      this.dataGenerators = schemasToGenerators(this.schemas, { immutable: true });
-    });
-
-    it('passes options to the dataGenerators', function () {
-      const result1 = this.dataGenerators.schema1({ field1: 'hello' });
-      result1.field1 = 'hi';
-      expect(result1).to.eql({ field1: 'hello' });
-
-      const result2 = this.dataGenerators.schema2([1, 2, 3]);
-      const testFn = () => {
-        result2.push(4);
+      this.schemas = {
+        name1: { type: 'string' },
+        name2: { type: 'number' },
       };
-      expect(testFn).to.throw('Cannot add property 3, object is not extensible');
+
+      this.firstReturn = Symbol('1');
+      this.secondReturn = Symbol('2');
+
+      const stub = sandbox.stub(lib, 'schemaToGenerator');
+      stub.onFirstCall().returns(this.firstReturn);
+      stub.onSecondCall().returns(this.secondReturn);
+    });
+    after(sandbox.restore);
+  };
+
+  context('with schemas keyed by name and without options', function () {
+    setupContext();
+    before(function () {
+      this.result = lib.schemasToGenerators(this.schemas);
+    });
+
+    it('passes the schemas and options in order to schemaToGenerator', function () {
+      expect(lib.schemaToGenerator).to.be.calledTwice;
+      expect(lib.schemaToGenerator.firstCall).to.be.calledWithExactly(
+        { type: 'string' },
+        { immutable: undefined },
+      );
+      expect(lib.schemaToGenerator.secondCall).to.be.calledWithExactly(
+        { type: 'number' },
+        { immutable: undefined },
+      );
+    });
+
+    it('returns dataGenerator functions keyed by name', function () {
+      expect(this.result).to.eql({
+        name1: this.firstReturn,
+        name2: this.secondReturn,
+      });
+    });
+  });
+
+  context('with schemas keyed by name and options', function () {
+    setupContext();
+    before(function () {
+      this.result = lib.schemasToGenerators(this.schemas, { immutable: true });
+    });
+
+    it('passes the schemas and options in order to schemaToGenerator', function () {
+      expect(lib.schemaToGenerator).to.be.calledTwice;
+      expect(lib.schemaToGenerator.firstCall).to.be.calledWithExactly(
+        { type: 'string' },
+        { immutable: true },
+      );
+      expect(lib.schemaToGenerator.secondCall).to.be.calledWithExactly(
+        { type: 'number' },
+        { immutable: true },
+      );
+    });
+
+    it('returns dataGenerator functions keyed by name', function () {
+      expect(this.result).to.eql({
+        name1: this.firstReturn,
+        name2: this.secondReturn,
+      });
     });
   });
 });

@@ -1,6 +1,6 @@
-const { schemaToGenerator } = require('../../index');
+const { schemaToGenerator } = require('../../lib');
 
-describe('schemaToGenerator', function () {
+describe('lib.schemaToGenerator', function () {
   context('without a schema', function () {
     it('throws an error', function () {
       const testFn = () => {
@@ -11,7 +11,7 @@ describe('schemaToGenerator', function () {
     });
   });
 
-  context('with a compatible json-schema', function () {
+  context('with a json-schema', function () {
     it('returns a dataGenerator function', function () {
       const dataGenerator = schemaToGenerator({ type: 'string' });
       expect(dataGenerator).to.be.a('function');

@@ -10,7 +10,7 @@
   "homepage": "https://github.com/randograms/schema-to-generator",
   "scripts": {
     "lint": "eslint --color .",
-    "test": "mocha --colors --require ./tests/bootstrap 'tests/unit/**/*.test.js'"
+    "test": "mocha --colors --require ./tests/bootstrap 'tests/**/**/*.test.js'"
   },
   "husky": {
     "hooks": {

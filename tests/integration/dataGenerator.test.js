@@ -5,7 +5,7 @@ const { schemaToGenerator } = require('../../index');
 
 const sandbox = sinon.createSandbox();
 
-describe('dataGenerator', function () {
+describe('index.schemaToGenerator->dataGenerator', function () {
   const setupValidatorStub = () => {
     before(function () {
       sinon.spy(schemaValidator, 'validate');
