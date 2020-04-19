@@ -1,54 +1,7 @@
-const jsf = require('json-schema-faker');
 const _ = require('lodash');
-const { schemaValidator } = require('../../lib');
 const { schemaToGenerator } = require('../../index');
 
-const sandbox = sinon.createSandbox();
-
 describe('index.schemaToGenerator->dataGenerator', function () {
-  const setupValidatorStub = () => {
-    before(function () {
-      sinon.spy(schemaValidator, 'validate');
-    });
-    after(function () {
-      schemaValidator.validate.restore();
-    });
-  };
-
-  const itValidatesTheReturnedData = () => {
-    it('validates the returned data', function () {
-      expect(schemaValidator.validate).to.be.called
-        .and.to.be.calledWithExactly(this.schema, this.result);
-    });
-  };
-
-  context('without an override', function () {
-    before(function () {
-      this.returnValue = Symbol('return value');
-      sandbox.stub(jsf, 'generate').returns(this.returnValue);
-      sandbox.stub(schemaValidator, 'validate').returns(true);
-
-      this.schema = { type: 'string' };
-      const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator();
-    });
-    after(sandbox.restore);
-
-    it('calls jsf.generate with the schema', function () {
-      expect(jsf.generate).to.be.called
-        .and.to.be.calledWithExactly(this.schema);
-    });
-
-    it('validates the data', function () {
-      expect(schemaValidator.validate).to.be.called
-        .and.to.be.calledWithExactly(this.schema, this.returnValue);
-    });
-
-    it('returns the generated data', function () {
-      expect(this.result).to.equal(this.returnValue);
-    });
-  });
-
   context('when the override type does not match the schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({ type: 'string' });
@@ -238,15 +191,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     ['boolean', 'boolean', true],
   ].forEach(([schemaType, overrideType, overrideValue]) => {
     context(`with a "${overrideType}" override on a "${schemaType}" schema`, function () {
-      setupValidatorStub();
       before(function () {
         this.schema = { type: schemaType };
 
         const dataGenerator = schemaToGenerator(this.schema);
         this.result = dataGenerator(overrideValue);
       });
-
-      itValidatesTheReturnedData();
 
       it('returns the override', function () {
         expect(this.result).to.equal(overrideValue);
@@ -255,7 +205,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with a primitive override that matches one of the schema types', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = { type: ['string', 'number', 'boolean'] };
 
@@ -263,15 +212,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       this.result = dataGenerator('test');
     });
 
-    itValidatesTheReturnedData();
-
     it('returns the override', function () {
       expect(this.result).to.equal('test');
     });
   });
 
   context('with a full object override', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'object',
@@ -291,8 +237,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
         field2: 1234,
       });
     });
-
-    itValidatesTheReturnedData();
 
     it('returns an object with the overridden fields', function () {
       expect(this.result).to.eql({
@@ -303,7 +247,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with a partial object override', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'object',
@@ -323,15 +266,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       });
     });
 
-    itValidatesTheReturnedData();
-
     it('returns an object with the overridden fields', function () {
       expect(this.result.field1).to.equal('abcd');
     });
   });
 
   context('with an object override for a nullable schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: ['object', 'null'],
@@ -354,9 +294,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
           field2: 7.5,
         });
 
-        expect(schemaValidator.validate).to.be.called
-          .and.to.be.calledWithExactly(this.schema, result);
-
         expect(result).to.be.an('object');
         expect(result.field2).to.equal(7.5);
       });
@@ -364,7 +301,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with a tuple array override', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'array',
@@ -390,8 +326,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       this.result = dataGenerator([undefined, 5, { field1: 3 }]);
     });
 
-    itValidatesTheReturnedData();
-
     it('returns an array with the overridden data', function () {
       expect(this.result[1]).to.equal(5);
       expect(this.result[2].field1).to.equal(3);
@@ -399,7 +333,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with a tuple array override for a nullable schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: ['array', 'null'],
@@ -416,10 +349,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     it('always returns an array', function () {
       _.times(10, () => {
         const result = this.dataGenerator([1, '2', true]);
-
-        expect(schemaValidator.validate).to.be.called
-          .and.to.be.calledWithExactly(this.schema, result);
-
         expect(result).to.eql([1, '2', true]);
       });
     });
@@ -447,7 +376,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with a list array override', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'array',
@@ -458,15 +386,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       this.result = dataGenerator([1, 2, 3]);
     });
 
-    itValidatesTheReturnedData();
-
     it('returns an array', function () {
       expect(this.result).to.eql([1, 2, 3]);
     });
   });
 
   context('with a partial item override on a list array schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'array',
@@ -486,8 +411,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       const dataGenerator = schemaToGenerator(this.schema);
       this.result = dataGenerator([{ field2: 7 }]);
     });
-
-    itValidatesTheReturnedData();
 
     it('returns an array with the overridden object', function () {
       expect(this.result).to.be.an('array');
@@ -514,7 +437,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with nested list array overrides on an object schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'object',
@@ -549,8 +471,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       });
     });
 
-    itValidatesTheReturnedData();
-
     it('respects the length of the inner array overrides', function () {
       expect(this.result.field2).to.eql([1, 2, 3]);
       expect(this.result.field3).to.eql([1, 2, 3, 4, 5]);
@@ -559,7 +479,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with nested list array overrides on an array schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: 'array',
@@ -577,8 +496,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       ]);
     });
 
-    itValidatesTheReturnedData();
-
     it('respects the length of the inner array overrides', function () {
       expect(this.result).to.eql([
         [1, 2, 3],
@@ -589,7 +506,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with a list array override for a nullable schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         type: ['array', 'null'],
@@ -602,17 +518,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     it('always returns an array', function () {
       _.times(10, () => {
         const result = this.dataGenerator([1, 2, 3]);
-
-        expect(schemaValidator.validate).to.be.called
-          .and.to.be.calledWithExactly(this.schema, result);
-
         expect(result).to.eql([1, 2, 3]);
       });
     });
   });
 
   context('with an override on an "allOf" schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         allOf: [
@@ -646,8 +557,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       });
     });
 
-    itValidatesTheReturnedData();
-
     it('returns data with the overridden values', function () {
       expect(this.result).to.eql({
         field1: [1, 2],
@@ -657,7 +566,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   });
 
   context('with an override on an "anyOf" schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         anyOf: [
@@ -676,15 +584,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       this.result = dataGenerator([1, 2]);
     });
 
-    itValidatesTheReturnedData();
-
     it('returns data with the overridden values', function () {
       expect(this.result).to.eql([1, 2]);
     });
   });
 
   context('with an override on a "oneOf" schema', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         oneOf: [
@@ -706,15 +611,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       this.result = dataGenerator([1, 2]);
     });
 
-    itValidatesTheReturnedData();
-
     it('returns data with the overridden values', function () {
       expect(this.result).to.eql([1, 2]);
     });
   });
 
   context('with nested overrides for a schema without types', function () {
-    setupValidatorStub();
     before(function () {
       this.schema = {
         properties: {
@@ -745,8 +647,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
         ],
       });
     });
-
-    itValidatesTheReturnedData();
 
     it('returns the overridden data', function () {
       expect(this.result).to.eql({
