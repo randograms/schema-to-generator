@@ -2,158 +2,6 @@ const _ = require('lodash');
 const { schemaToGenerator } = require('../../index');
 
 describe('index.schemaToGenerator->dataGenerator', function () {
-  context('when the override type does not match the schema type', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({ type: 'string' });
-      const testFn = () => {
-        dataGenerator(1);
-      };
-
-      expect(testFn).to.throw('Invalid override type "integer" for schema type "string"');
-    });
-  });
-
-  context('with a "number" override on an "integer" schema', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({ type: 'integer' });
-      const testFn = () => {
-        dataGenerator(3.5);
-      };
-
-      expect(testFn).to.throw('Invalid override type "number" for schema type "integer"');
-    });
-  });
-
-  context('when a nested override property does not match the nested schema type', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        type: 'object',
-        properties: {
-          field1: {
-            type: 'object',
-            properties: {
-              field2: { type: 'string' },
-            },
-            required: ['field2'],
-          },
-        },
-        required: ['field1'],
-      });
-      const testFn = () => {
-        dataGenerator({
-          field1: {
-            field2: 7,
-          },
-        });
-      };
-
-      expect(testFn).to.throw('Invalid override.field1.field2 type "integer" for schema type "string"');
-    });
-  });
-
-  context('when a nested tuple array item override does not match the nested schema type', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        type: 'array',
-        items: [
-          { type: 'number' },
-          { type: 'string' },
-        ],
-      });
-      const testFn = () => {
-        dataGenerator([1, 2]);
-      };
-
-      expect(testFn).to.throw('Invalid override[1] type "integer" for schema type "string"');
-    });
-  });
-
-  context('when a nested list array item override does not match the nested schema type', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        type: 'array',
-        items: { type: 'number' },
-      });
-      const testFn = () => {
-        dataGenerator([1, '2', 3]);
-      };
-
-      expect(testFn).to.throw('Invalid override[1] type "string" for schema type "number"');
-    });
-  });
-
-  context('when a nested allOf override does not match the nested schema type', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        allOf: [
-          {
-            type: 'object',
-            properties: {
-              field1: { type: 'string' },
-            },
-            required: ['field1'],
-          },
-          {
-            type: 'object',
-            properties: {
-              field2: { type: 'string' },
-            },
-            required: ['field2'],
-          },
-        ],
-      });
-      const testFn = () => {
-        dataGenerator({ field2: 3 });
-      };
-
-      expect(testFn).to.throw('Invalid override<allOf[1]>.field2 type "integer" for schema type "string"');
-    });
-  });
-
-  context('when a nested anyOf override does not match any of the schema types', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        anyOf: [
-          {
-            type: 'array',
-            items: { type: 'string' },
-          },
-          {
-            type: 'array',
-            items: { type: 'number' },
-          },
-        ],
-      });
-      const testFn = () => {
-        dataGenerator([2, true]);
-      };
-
-      expect(testFn).to.throw('Invalid override<anyOf[0]>[0] type "integer" for schema type "string", Invalid override<anyOf[1]>[1] type "boolean" for schema type "number"');
-    });
-  });
-
-  context('when a nested oneOf override does not match any of the schema types', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        oneOf: [
-          {
-            type: 'array',
-            items: { type: 'string' },
-          },
-          {
-            type: 'array',
-            items: { type: 'number' },
-          },
-        ],
-      });
-      const testFn = () => {
-        dataGenerator([2, true]);
-      };
-
-      expect(testFn).to.throw('Invalid override<oneOf[0]>[0] type "integer" for schema type "string", Invalid override<oneOf[1]>[1] type "boolean" for schema type "number"');
-    });
-  });
-
   context('when a deeply nested override value does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -162,23 +10,40 @@ describe('index.schemaToGenerator->dataGenerator', function () {
           field1: {
             type: 'array',
             items: {
-              type: 'object',
-              properties: {
-                field2: { type: 'string' },
-              },
-              required: ['field2'],
+              type: 'array',
+              items: [
+                { type: 'string' },
+                { type: 'number' },
+                {
+                  allOf: [
+                    { type: 'integer' },
+                    {
+                      anyOf: [
+                        { type: 'boolean' },
+                        {
+                          oneOf: [
+                            { type: 'null' },
+                            { type: 'string' },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
             },
           },
         },
         required: ['field1'],
       });
       const testFn = () => {
+        const badIntegerValue = 7;
         dataGenerator({
-          field1: [undefined, { field2: 3 }],
+          field1: [undefined, ['test', 3, badIntegerValue]],
         });
       };
 
-      expect(testFn).to.throw('Invalid override.field1[1].field2 type "integer" for schema type "string"');
+      expect(testFn).to.throw('Invalid override.field1[1][2]<allOf[1]><anyOf[0]> type "integer" for schema type "boolean", Invalid override.field1[1][2]<allOf[1]><anyOf[1]><oneOf[0]> type "integer" for schema type "null", Invalid override.field1[1][2]<allOf[1]><anyOf[1]><oneOf[1]> type "integer" for schema type "string"');
     });
   });
 
@@ -391,33 +256,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     });
   });
 
-  context('with a partial item override on a list array schema', function () {
-    before(function () {
-      this.schema = {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            field1: { type: 'string' },
-            field2: { type: 'number' },
-          },
-          required: [
-            'field1',
-            'field2',
-          ],
-        },
-      };
-
-      const dataGenerator = schemaToGenerator(this.schema);
-      this.result = dataGenerator([{ field2: 7 }]);
-    });
-
-    it('returns an array with the overridden object', function () {
-      expect(this.result).to.be.an('array');
-      expect(this.result[0].field2).to.equal(7);
-    });
-  });
-
   context('with list array overrides of varying length', function () {
     before(function () {
       this.dataGenerator = schemaToGenerator({
@@ -478,7 +316,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     });
   });
 
-  context('with nested list array overrides on an array schema', function () {
+  context('with nested list array overrides on a list array schema', function () {
     before(function () {
       this.schema = {
         type: 'array',
