@@ -10,38 +10,30 @@ const jsf = require('json-schema-faker');
 const deepFreeze = require('deep-freeze');
 
 const lib = {
-  coerceAllOf: (allOf, override, schemaPath) => (
-    allOf.map((innerSchema, index) => lib.coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<allOf[${index}]>`)) // eslint-disable-line no-use-before-define
-  ),
-  coerceListArraySchema: (schema, override, schemaPath) => ({
-    ...schema,
-    items: override.map((innerOverride, index) => lib.coerceSchemaToMatchOverride(schema.items, innerOverride, `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
-    minItems: override.length,
-    maxItems: override.length,
-  }),
-  coerceObjectSchema: (schema, override, schemaPath) => {
-    if (schema.additionalProperties === false) {
-      const invalidAdditionalProperties = (
-        _(override)
-          .keys()
-          .reject((propertyName) => _.has(schema.properties, propertyName))
-          .value()
-      );
-
-      if (invalidAdditionalProperties.length > 0) {
-        const formattedInvalidPropertyNames = invalidAdditionalProperties.map((propertyName) => `"${propertyName}"`).join(', ');
-        throw new Error(`Invalid additional properties ${formattedInvalidPropertyNames} on ${schemaPath}`);
-      }
-    }
-
-    return {
-      ...schema,
-      properties: _.mapValues(
-        schema.properties,
-        (propertySchema, propertyName) => lib.coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`), // eslint-disable-line no-use-before-define
-      ),
-    };
+  buildSchemaCoercionErrorStrategy: (schemaPath) => (validationErrorMessage) => {
+    const errorMessage = validationErrorMessage.replace(/data/g, schemaPath);
+    throw new Error(errorMessage);
   },
+  coerceAllOf: (allOf, override, schemaPath) => (
+    allOf.map((innerSchema, index) => lib.coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<allOf[${index}]>`))
+  ),
+  coerceArrayListSchema: (schema, override, schemaPath) => ({
+    ...schema,
+    items: override.map((innerOverride, index) => lib.coerceSchemaToMatchOverride(schema.items, innerOverride, `${schemaPath}[${index}]`)),
+    additionalItems: false,
+  }),
+  coerceArrayTupleSchema: (schema, override, schemaPath) => ({
+    ...schema,
+    items: schema.items.map((tupleItemSchema, index) => lib.coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)),
+    additionalItems: false,
+  }),
+  coerceObjectSchema: (schema, override, schemaPath) => ({
+    ...schema,
+    properties: _.mapValues(
+      schema.properties,
+      (propertySchema, propertyName) => lib.coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`),
+    ),
+  }),
   coerceSchemaToMatchOverride: (schema, override, schemaPath = 'override') => {
     const overrideDataType = lib.getDataType(override);
     const schemaAllowsAnyType = schema.type === undefined;
@@ -64,13 +56,15 @@ const lib = {
     };
 
     if (overrideDataType === 'object' && coercedSchema.properties !== undefined) {
+      lib.shallowValidate(coercedSchema, override, schemaPath);
       coercedSchema = lib.coerceObjectSchema(coercedSchema, override, schemaPath);
     }
 
     if (overrideDataType === 'array' && schema.items !== undefined) {
+      lib.shallowValidate(coercedSchema, override, schemaPath);
       coercedSchema = _.isArray(coercedSchema.items)
-        ? lib.coerceTupleArraySchema(coercedSchema, override, schemaPath)
-        : lib.coerceListArraySchema(coercedSchema, override, schemaPath);
+        ? lib.coerceArrayTupleSchema(coercedSchema, override, schemaPath)
+        : lib.coerceArrayListSchema(coercedSchema, override, schemaPath);
     }
 
     if (coercedSchema.allOf !== undefined) {
@@ -87,14 +81,10 @@ const lib = {
 
     return coercedSchema;
   },
-  coerceTupleArraySchema: (schema, override, schemaPath) => ({
-    ...schema,
-    items: schema.items.map((tupleItemSchema, index) => lib.coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)), // eslint-disable-line no-use-before-define
-  }),
   coerceValidInnerSchemas: (allInnerSchemas, override, schemaPath, schemaPathKey) => {
     const coercedInnerSchemas = allInnerSchemas.map((innerSchema, index) => {
       try {
-        return lib.coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<${schemaPathKey}[${index}]>`); // eslint-disable-line no-use-before-define
+        return lib.coerceSchemaToMatchOverride(innerSchema, override, `${schemaPath}<${schemaPathKey}[${index}]>`);
       } catch (error) {
         return error;
       }
@@ -140,20 +130,23 @@ const lib = {
         mockData = override;
       }
 
-      const isValid = lib.schemaValidator.validate(schema, mockData);
-      if (!isValid) {
-        const validationError = `${reset('Validation error:')} ${red(lib.schemaValidator.errorsText())}`;
-        const errorMessage = [
-          red('Data Generator Error'),
-          validationError,
-          reset('Original Schema:'),
-          green(JSON.stringify(schema, null, 2)),
-          validationError,
-          reset('Generated Mock Data:'),
-          blue(JSON.stringify(mockData, null, 2)),
-        ].join('\n');
-        throw new Error(errorMessage);
-      }
+      lib.validate({
+        schema,
+        data: mockData,
+        errorStrategy: (validationErrorMessage) => {
+          const validationError = `${reset('Validation error:')} ${red(validationErrorMessage)}`;
+          const errorMessage = [
+            red('Data Generator Error'),
+            validationError,
+            reset('Original Schema:'),
+            green(JSON.stringify(schema, null, 2)),
+            validationError,
+            reset('Generated Mock Data:'),
+            blue(JSON.stringify(mockData, null, 2)),
+          ].join('\n');
+          throw new Error(errorMessage);
+        },
+      });
 
       if (immutable && mockData !== null && typeof mockData === 'object') {
         return deepFreeze(mockData);
@@ -170,6 +163,55 @@ const lib = {
   schemaValidator: new Ajv(),
   setJsfPatternHandler: (patternHandler) => {
     jsf.define('pattern', patternHandler);
+  },
+  shallowValidate: (schemaWithKnownType, override, schemaPath) => {
+    const shallowSchema = { ...schemaWithKnownType };
+    delete shallowSchema.allOf;
+    delete shallowSchema.anyOf;
+    delete shallowSchema.oneOf;
+
+    const buildEmptySchema = () => ({});
+
+    let coercedOverride = override;
+    if (schemaWithKnownType.type === 'object') {
+      shallowSchema.properties = _.mapValues(schemaWithKnownType.properties, buildEmptySchema);
+      const placeHolderProperties = _.mapValues(schemaWithKnownType.properties, () => null);
+      coercedOverride = {
+        ...placeHolderProperties,
+        ...override,
+      };
+    } else if (_.isArray(schemaWithKnownType.items)) {
+      shallowSchema.items = schemaWithKnownType.items.map(buildEmptySchema);
+
+      if (shallowSchema.items.length > override.length) {
+        coercedOverride = shallowSchema.items.map((itemSchema, index) => override[index]);
+      }
+    } else {
+      shallowSchema.items = {};
+    }
+
+    lib.validate({
+      schema: shallowSchema,
+      data: coercedOverride,
+      errorStrategy: lib.buildSchemaCoercionErrorStrategy(schemaPath),
+    });
+  },
+  validate: ({
+    schema,
+    data,
+    errorStrategy,
+  }) => {
+    const isValid = lib.schemaValidator.validate(schema, data);
+    if (!isValid) {
+      const validationErrorMessage = lib.schemaValidator.errorsText();
+
+      if (errorStrategy) {
+        errorStrategy(validationErrorMessage);
+        return;
+      }
+
+      throw new Error(validationErrorMessage);
+    }
   },
 };
 

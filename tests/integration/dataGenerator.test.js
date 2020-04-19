@@ -71,28 +71,6 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     });
   });
 
-  context('when an object override has additionalProperties', function () {
-    it('throws an error', function () {
-      const dataGenerator = schemaToGenerator({
-        type: 'object',
-        properties: {
-          field1: { type: 'string' },
-        },
-        required: ['field1'],
-        additionalProperties: false,
-      });
-
-      const testFn = () => {
-        dataGenerator({
-          field2: 3,
-          field3: 4,
-        });
-      };
-
-      expect(testFn).to.throw('Invalid additional properties "field2", "field3" on override');
-    });
-  });
-
   context('when a nested override property does not match the nested schema type', function () {
     it('throws an error', function () {
       const dataGenerator = schemaToGenerator({
@@ -158,7 +136,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
           {
             type: 'object',
             properties: {
-              field: { type: 'string' },
+              field1: { type: 'string' },
             },
             required: ['field1'],
           },
@@ -239,7 +217,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
             },
           },
         },
-        required: ['fiedl1'],
+        required: ['field1'],
       });
       const testFn = () => {
         dataGenerator({
@@ -444,6 +422,27 @@ describe('index.schemaToGenerator->dataGenerator', function () {
 
         expect(result).to.eql([1, '2', true]);
       });
+    });
+  });
+
+  context('when a tuple override does not have all the items', function () {
+    before(function () {
+      const schema = {
+        type: 'array',
+        items: [
+          { type: 'boolean' },
+          { type: 'string' },
+          { type: 'number' },
+        ],
+        minItems: 3,
+      };
+
+      const dataGenerator = schemaToGenerator(schema);
+      this.result = dataGenerator([undefined, 'abcd']);
+    });
+
+    it('populates the rest of the items', function () {
+      expect(this.result[1]).to.equal('abcd');
     });
   });
 
