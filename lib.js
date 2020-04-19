@@ -34,7 +34,7 @@ const lib = {
       (propertySchema, propertyName) => lib.coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`),
     ),
   }),
-  coerceSchemaToMatchOverride: (schema, override, schemaPath = 'override') => {
+  coerceSchemaToMatchOverride: (schema, override, schemaPath) => {
     const overrideDataType = lib.getDataType(override);
     const schemaAllowsAnyType = schema.type === undefined;
     const schemaTypes = _.castArray(schema.type);
@@ -117,7 +117,7 @@ const lib = {
 
     const dataGenerator = (override) => {
       const overrideDataType = lib.getDataType(override);
-      const coercedSchema = lib.coerceSchemaToMatchOverride(schema, override);
+      const coercedSchema = lib.coerceSchemaToMatchOverride(schema, override, 'override');
       const baseData = jsf.generate(coercedSchema);
       const isMergeable = overrideDataType === 'object' || overrideDataType === 'array';
 
