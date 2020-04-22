@@ -27,13 +27,39 @@ const lib = {
     items: schema.items.map((tupleItemSchema, index) => lib.coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)),
     additionalItems: false,
   }),
-  coerceObjectSchema: (schema, override, schemaPath) => ({
-    ...schema,
-    properties: _.mapValues(
-      schema.properties,
-      (propertySchema, propertyName) => lib.coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`),
-    ),
-  }),
+  coerceObjectSchema: (schema, override, schemaPath) => {
+    const coercedSchema = { ...schema };
+
+    if (schema.properties) {
+      coercedSchema.properties = _.mapValues(
+        schema.properties,
+        (propertySchema, propertyName) => lib.coerceSchemaToMatchOverride(propertySchema, override[propertyName], `${schemaPath}.${propertyName}`),
+      );
+    }
+
+    if (schema.patternProperties) {
+      const coercedPatternPropertiesByOverrideKeys = _.mapValues(override, (overrideValue, overrideKey) => ({
+        allOf: (
+          _(schema.patternProperties)
+            .toPairs()
+            .filter(([pattern]) => (new RegExp(pattern)).test(overrideKey))
+            .map(([/* pattern */, patternPropertySchema]) => lib.coerceSchemaToMatchOverride(patternPropertySchema, overrideValue, `${schemaPath}."${overrideKey}"`))
+            .value()
+        ),
+      }));
+
+      delete coercedSchema.patternProperties;
+      coercedSchema.properties = coercedSchema.properties || {};
+      coercedSchema.required = coercedSchema.required || [];
+
+      _.forEach(coercedPatternPropertiesByOverrideKeys, (coercedPatternPropertySchema, overrideKey) => {
+        coercedSchema.properties[overrideKey] = coercedPatternPropertySchema;
+        coercedSchema.required.push(overrideKey);
+      });
+    }
+
+    return coercedSchema;
+  },
   coerceSchemaToMatchOverride: (schema, override, schemaPath) => {
     const overrideDataType = lib.getDataType(override);
     const schemaAllowsAnyType = schema.type === undefined;
@@ -55,7 +81,7 @@ const lib = {
       type: overrideDataType,
     };
 
-    if (overrideDataType === 'object' && coercedSchema.properties !== undefined) {
+    if (overrideDataType === 'object' && (coercedSchema.properties !== undefined || coercedSchema.patternProperties !== undefined)) {
       lib.shallowValidate(coercedSchema, override, schemaPath);
       coercedSchema = lib.coerceObjectSchema(coercedSchema, override, schemaPath);
     }
@@ -174,12 +200,18 @@ const lib = {
 
     let coercedOverride = override;
     if (schemaWithKnownType.type === 'object') {
-      shallowSchema.properties = _.mapValues(schemaWithKnownType.properties, buildEmptySchema);
-      const placeHolderProperties = _.mapValues(schemaWithKnownType.properties, () => null);
-      coercedOverride = {
-        ...placeHolderProperties,
-        ...override,
-      };
+      if (schemaWithKnownType.properties) {
+        shallowSchema.properties = _.mapValues(schemaWithKnownType.properties, buildEmptySchema);
+        const placeHolderProperties = _.mapValues(schemaWithKnownType.properties, () => null);
+        coercedOverride = {
+          ...placeHolderProperties,
+          ...override,
+        };
+      }
+
+      if (schemaWithKnownType.patternProperties) {
+        shallowSchema.patternProperties = _.mapValues(schemaWithKnownType.patternProperties, buildEmptySchema);
+      }
     } else if (_.isArray(schemaWithKnownType.items)) {
       shallowSchema.items = schemaWithKnownType.items.map(buildEmptySchema);
 

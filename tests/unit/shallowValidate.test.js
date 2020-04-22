@@ -24,6 +24,10 @@ describe('lib.shallowValidate', function () {
           field1: Symbol('field1 schema'),
           field2: Symbol('field1 schema'),
         },
+        patternProperties: {
+          '[ab][cd]': Symbol('pattern1 schema'),
+          '[ef][gh]': Symbol('pattern2 schema'),
+        },
         allOf: Symbol('combined schema'),
         anyOf: Symbol('combined schema'),
         oneOf: Symbol('combined schema'),
@@ -47,6 +51,10 @@ describe('lib.shallowValidate', function () {
             properties: {
               field1: {},
               field2: {},
+            },
+            patternProperties: {
+              '[ab][cd]': {},
+              '[ef][gh]': {},
             },
             additionalSchemaInfo: this.additionalSchemaInfo,
           },

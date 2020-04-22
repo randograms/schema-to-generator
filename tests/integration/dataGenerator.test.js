@@ -165,6 +165,104 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     });
   });
 
+  context('without an override on a pattern property schema', function () {
+    before(function () {
+      const dataGenerator = schemaToGenerator({
+        patternProperties: {
+          '[ab][cd]': { type: 'string' },
+        },
+      });
+
+      const results = _.range(10).map(() => dataGenerator());
+      this.someMockDataHaveKeys = results.some((mockObject) => Object.keys(mockObject).length > 0);
+    });
+
+    it('sometimes generates mock keys', function () {
+      expect(this.someMockDataHaveKeys).to.be.true;
+    });
+  });
+
+  context('with an override on a pattern property schema', function () {
+    before(function () {
+      const dataGenerator = schemaToGenerator({
+        patternProperties: {
+          '[ab][cd]': { type: 'string' },
+        },
+      });
+
+      this.results = _.range(10)
+        .map(() => ({
+          ad: 'hello',
+          bc: 'hi',
+        }))
+        .map(dataGenerator);
+    });
+
+    it('does not generate additional keys and values', function () {
+      this.results.forEach((mockData) => {
+        expect(mockData).to.eql({
+          ad: 'hello',
+          bc: 'hi',
+        });
+      });
+    });
+  });
+
+  context('with a partial object override on a pattern property schema', function () {
+    before(function () {
+      const dataGenerator = schemaToGenerator({
+        patternProperties: {
+          '[ab][cd]': {
+            type: 'object',
+            properties: {
+              field1: { type: 'string' },
+              field2: { type: 'number' },
+            },
+            required: ['field1', 'field2'],
+          },
+        },
+      });
+
+      this.results = _.range(10)
+        .map(() => ({
+          ad: { field1: 'hello' },
+          bc: { field2: 7 },
+        }))
+        .map(dataGenerator);
+    });
+
+    it('populates the additional fields', function () {
+      this.results.forEach((mockData) => {
+        expect(mockData.ad.field1).to.equal('hello');
+        expect(mockData.bc.field2).to.equal(7);
+      });
+    });
+  });
+
+  context('with a nested array override on a pattern property schema', function () {
+    before(function () {
+      this.dataGenerator = schemaToGenerator({
+        patternProperties: {
+          '[ab][cd]': {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        },
+      });
+    });
+
+    it('always respects the length of the override', function () {
+      [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 4, 5].forEach((arrayLength) => {
+        const arrayOverride = _.range(arrayLength);
+        const result = this.dataGenerator({
+          ac: arrayOverride,
+        });
+        expect(result.ac).to.be.an('array')
+          .and.to.have.lengthOf(arrayLength);
+      });
+    });
+  });
+
   context('with a tuple array override', function () {
     before(function () {
       this.schema = {

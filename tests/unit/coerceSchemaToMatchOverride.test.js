@@ -163,12 +163,62 @@ describe('lib.coerceSchemaToMatchOverride', function () {
         );
     });
 
-    it('coerces the object properties of the modified schema', function () {
+    it('coerces the property schemas of the modified schema', function () {
       expect(lib.coerceObjectSchema).to.be.called
         .and.to.be.calledWithExactly(
           {
             type: 'object',
             properties: this.propertySchemas,
+            additionalSchemaInformation: this.additionalSchemaInformation,
+          },
+          this.override,
+          'testSchemaPath',
+        );
+    });
+
+    it('returns the fully coerced schema', function () {
+      expect(this.result).to.equal(this.fullyCoercedSchema);
+    });
+  });
+
+  context('when the override is an object and the schema has patternProperties', function () {
+    before(function () {
+      this.patternPropertySchemas = Symbol('properties');
+      this.additionalSchemaInformation = Symbol('additional schema info');
+      const originalSchema = {
+        type: ['object', 'null'],
+        patternProperties: this.patternPropertySchemas,
+        additionalSchemaInformation: this.additionalSchemaInformation,
+      };
+
+      this.fullyCoercedSchema = {};
+      sandbox.stub(lib, 'shallowValidate');
+      sandbox.stub(lib, 'coerceObjectSchema').returns(this.fullyCoercedSchema);
+
+      this.override = { field1: 'test' };
+      this.result = lib.coerceSchemaToMatchOverride(originalSchema, this.override, 'testSchemaPath');
+    });
+    after(sandbox.restore);
+
+    it('shallow validates the modified schema against the override', function () {
+      expect(lib.shallowValidate).to.be.called
+        .and.to.be.calledWithExactly(
+          {
+            type: 'object',
+            patternProperties: this.patternPropertySchemas,
+            additionalSchemaInformation: this.additionalSchemaInformation,
+          },
+          this.override,
+          'testSchemaPath',
+        );
+    });
+
+    it('coerces the patternProperty schemas of the modified schema', function () {
+      expect(lib.coerceObjectSchema).to.be.called
+        .and.to.be.calledWithExactly(
+          {
+            type: 'object',
+            patternProperties: this.patternPropertySchemas,
             additionalSchemaInformation: this.additionalSchemaInformation,
           },
           this.override,
