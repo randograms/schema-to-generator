@@ -30,11 +30,17 @@ describe('lib.schemasToGenerators', function () {
       expect(lib.schemaToGenerator).to.be.calledTwice;
       expect(lib.schemaToGenerator.firstCall).to.be.calledWithExactly(
         { type: 'string' },
-        { immutable: undefined },
+        {
+          generateBaseData: undefined,
+          immutable: undefined,
+        },
       );
       expect(lib.schemaToGenerator.secondCall).to.be.calledWithExactly(
         { type: 'number' },
-        { immutable: undefined },
+        {
+          generateBaseData: undefined,
+          immutable: undefined,
+        },
       );
     });
 
@@ -49,18 +55,31 @@ describe('lib.schemasToGenerators', function () {
   context('with schemas keyed by name and options', function () {
     setupContext();
     before(function () {
-      this.result = lib.schemasToGenerators(this.schemas, { immutable: true });
+      this.generateBaseData = Symbol('generateBaseData');
+      this.result = lib.schemasToGenerators(
+        this.schemas,
+        {
+          generateBaseData: this.generateBaseData,
+          immutable: true,
+        },
+      );
     });
 
     it('passes the schemas and options in order to schemaToGenerator', function () {
       expect(lib.schemaToGenerator).to.be.calledTwice;
       expect(lib.schemaToGenerator.firstCall).to.be.calledWithExactly(
         { type: 'string' },
-        { immutable: true },
+        {
+          generateBaseData: this.generateBaseData,
+          immutable: true,
+        },
       );
       expect(lib.schemaToGenerator.secondCall).to.be.calledWithExactly(
         { type: 'number' },
-        { immutable: true },
+        {
+          generateBaseData: this.generateBaseData,
+          immutable: true,
+        },
       );
     });
 
