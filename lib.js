@@ -136,7 +136,13 @@ const lib = {
         return typeof data;
     }
   },
-  schemaToGenerator: (schema, { immutable = false } = {}) => {
+  schemaToGenerator: (
+    schema,
+    {
+      generateBaseData = (coercedSchema) => jsf.generate(coercedSchema),
+      immutable = false,
+    } = {},
+  ) => {
     if (!schema) {
       throw new Error('A json-schema must be provided');
     }
@@ -144,7 +150,7 @@ const lib = {
     const dataGenerator = (override) => {
       const overrideDataType = lib.getDataType(override);
       const coercedSchema = lib.coerceSchemaToMatchOverride(schema, override, 'override');
-      const baseData = jsf.generate(coercedSchema);
+      const baseData = generateBaseData(coercedSchema);
       const isMergeable = overrideDataType === 'object' || overrideDataType === 'array';
 
       let mockData;
@@ -183,13 +189,10 @@ const lib = {
 
     return dataGenerator;
   },
-  schemasToGenerators: (schemas, { immutable } = {}) => (
-    _.mapValues(schemas, (schema) => lib.schemaToGenerator(schema, { immutable }))
+  schemasToGenerators: (schemas, { generateBaseData, immutable } = {}) => (
+    _.mapValues(schemas, (schema) => lib.schemaToGenerator(schema, { generateBaseData, immutable }))
   ),
   schemaValidator: new Ajv(),
-  setJsfPatternHandler: (patternHandler) => {
-    jsf.define('pattern', patternHandler);
-  },
   shallowValidate: (schemaWithKnownType, override, schemaPath) => {
     const shallowSchema = { ...schemaWithKnownType };
     delete shallowSchema.allOf;

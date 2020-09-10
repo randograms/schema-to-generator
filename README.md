@@ -183,6 +183,23 @@ mockUsers:
 
 ## Options
 
+### GenerateBaseData
+
+A function that takes a json-schema and returns mock data. This allows the user to use their own json-schema-faker instance or a different library such as [schema-to-data](https://www.npmjs.com/package/@randograms/schema-to-data). A dataGenerator will call `generateBaseData` and then merge any overridden data on top of it.
+
+```javascript
+const jsf = require('json-schema-faker');
+// ... set custom jsf options here ...
+const dataGenerator = schemaToGenerator({ type: 'string' }, { generateBaseData: (schema) => jsf.generate(schema) });
+const dataGenerators = schemasToGenerators(
+  {
+    username: { type: 'string' },
+    userId: { type: 'integer' },
+  },
+  { generateBaseData: (schema) => jsf.generate(schema) },
+);
+```
+
 ### Immutable
 
 All mock data, including overridden values, are always validated against the original schema when a dataGenerator is called. Therefore it might be necessary to prevent further mutation of data after generation. Pass the immutable option when creating the dataGenerator function to make that function return immutable mock data. This library uses [deep-freeze](https://www.npmjs.com/package/deep-freeze) to freeze all nested objects and arrays.
