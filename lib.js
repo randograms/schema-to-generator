@@ -51,6 +51,7 @@ const lib = {
       delete coercedSchema.patternProperties;
       coercedSchema.properties = coercedSchema.properties || {};
       coercedSchema.required = coercedSchema.required || [];
+      coercedSchema.maxProperties = _.keys(override).length;
 
       _.forEach(coercedPatternPropertiesByOverrideKeys, (coercedPatternPropertySchema, overrideKey) => {
         coercedSchema.properties[overrideKey] = coercedPatternPropertySchema;
