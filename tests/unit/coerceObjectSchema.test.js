@@ -132,6 +132,7 @@ describe('lib.coerceObjectSchema', function () {
           },
         },
         required: ['ac', 'bc', 'ab'],
+        maxProperties: 3,
         additionalSchemaInfo: this.additionalSchemaInfo,
       });
     });

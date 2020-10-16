@@ -1,4 +1,4 @@
-const jsf = require('json-schema-faker');
+const schemaToDataExport = require('@randograms/schema-to-data');
 const _ = require('lodash');
 const lib = require('../../lib');
 
@@ -18,7 +18,7 @@ describe('lib.schemaToGenerator->dataGenerator', function () {
       this.mergedData = Symbol('merged data');
 
       sandbox.stub(lib, 'coerceSchemaToMatchOverride').returns(this.coercedSchema);
-      sandbox.stub(jsf, 'generate').returns(this.generatedData);
+      sandbox.stub(schemaToDataExport, 'schemaToData').returns(this.generatedData);
       sandbox.stub(_, 'merge').returns(this.mergedData);
       sandbox.stub(lib, 'validate');
 
@@ -39,7 +39,7 @@ describe('lib.schemaToGenerator->dataGenerator', function () {
     });
 
     it('generates base mock data from the coerced schema', function () {
-      expect(jsf.generate).to.be.called
+      expect(schemaToDataExport.schemaToData).to.be.called
         .and.to.be.calledWithExactly(this.coercedSchema);
     });
 

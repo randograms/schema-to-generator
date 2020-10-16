@@ -59,6 +59,7 @@ describe('lib.coerceArrayTupleSchema', function () {
         this.thirdCoercedSchema,
       ],
       additionalSchemaInfo: this.additionalSchemaInfo,
+      minItems: 2,
       additionalItems: false,
     });
   });

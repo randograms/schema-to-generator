@@ -1,6 +1,6 @@
 # schema-to-generator
 
-Domain driven data generators thanks to the power of [json-schema](https://json-schema.org/understanding-json-schema/), [json-schema-faker](https://www.npmjs.com/package/json-schema-faker) and [lodash merge](https://lodash.com/docs/4.17.15#merge). Great for creating domain-specific functions to generate mock data based on json-schema data definitions.
+Domain driven data generators thanks to the power of [json-schema](https://json-schema.org/understanding-json-schema/), [schema-to-data](https://www.npmjs.com/package/@randograms/schema-to-data) and [lodash merge](https://lodash.com/docs/4.17.15#merge). Great for creating domain-specific functions to generate mock data based on json-schema data definitions.
 
 ## Getting Started
 
@@ -185,19 +185,26 @@ mockUsers:
 
 ### GenerateBaseData
 
-A function that takes a json-schema and returns mock data. This allows the user to use their own json-schema-faker instance or a different library such as [schema-to-data](https://www.npmjs.com/package/@randograms/schema-to-data). A dataGenerator will call `generateBaseData` and then merge any overridden data on top of it.
+A function that takes a json-schema and returns mock data. This allows the user to use their own schema-to-data instance or a different library such as [json-schema-faker](https://www.npmjs.com/package/json-schema-faker). A dataGenerator will call `generateBaseData` and then merge any overridden data on top of it.
 
 ```javascript
-const jsf = require('json-schema-faker');
-// ... set custom jsf options here ...
-const dataGenerator = schemaToGenerator({ type: 'string' }, { generateBaseData: (schema) => jsf.generate(schema) });
+// with schema-to-data
+const { createWithDefaults } = require('@randograms/schema-to-data');
+const schemaToData = createWithDefaults({ /* custom defaults */ });
+
+const dataGenerator = schemaToGenerator({ type: 'string' }, { generateBaseData: (schema) => schemaToData(schema) });
 const dataGenerators = schemasToGenerators(
   {
     username: { type: 'string' },
     userId: { type: 'integer' },
   },
-  { generateBaseData: (schema) => jsf.generate(schema) },
+  { generateBaseData: (schema) => schemaToData(schema) },
 );
+
+// with json-schema-faker
+const jsf = require('json-schema-faker');
+/* set additional jsf options here */
+const dataGenerator = schemaToGenerator({ type: 'string' }, { generateBaseData: (schema) => jsf.generate(schema) });
 ```
 
 ### Immutable

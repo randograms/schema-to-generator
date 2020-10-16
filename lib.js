@@ -6,7 +6,7 @@ const {
   blue,
   reset,
 } = require('ansi-colors');
-const jsf = require('json-schema-faker');
+const schemaToDataExport = require('@randograms/schema-to-data');
 const deepFreeze = require('deep-freeze');
 
 const lib = {
@@ -25,6 +25,7 @@ const lib = {
   coerceArrayTupleSchema: (schema, override, schemaPath) => ({
     ...schema,
     items: schema.items.map((tupleItemSchema, index) => lib.coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)),
+    minItems: Math.max(schema.minItems || 0, override.length),
     additionalItems: false,
   }),
   coerceObjectSchema: (schema, override, schemaPath) => {
@@ -51,6 +52,7 @@ const lib = {
       delete coercedSchema.patternProperties;
       coercedSchema.properties = coercedSchema.properties || {};
       coercedSchema.required = coercedSchema.required || [];
+      coercedSchema.maxProperties = _.keys(override).length;
 
       _.forEach(coercedPatternPropertiesByOverrideKeys, (coercedPatternPropertySchema, overrideKey) => {
         coercedSchema.properties[overrideKey] = coercedPatternPropertySchema;
@@ -139,7 +141,7 @@ const lib = {
   schemaToGenerator: (
     schema,
     {
-      generateBaseData = (coercedSchema) => jsf.generate(coercedSchema),
+      generateBaseData = (coercedSchema) => schemaToDataExport.schemaToData(coercedSchema),
       immutable = false,
     } = {},
   ) => {
