@@ -6,7 +6,7 @@ const {
   blue,
   reset,
 } = require('ansi-colors');
-const jsf = require('json-schema-faker');
+const schemaToDataExport = require('@randograms/schema-to-data');
 const deepFreeze = require('deep-freeze');
 
 const lib = {
@@ -139,7 +139,7 @@ const lib = {
   schemaToGenerator: (
     schema,
     {
-      generateBaseData = (coercedSchema) => jsf.generate(coercedSchema),
+      generateBaseData = (coercedSchema) => schemaToDataExport.schemaToData(coercedSchema),
       immutable = false,
     } = {},
   ) => {

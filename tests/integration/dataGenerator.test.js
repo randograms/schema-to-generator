@@ -94,6 +94,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
           'field1',
           'field2',
         ],
+        additionalProperties: false,
       };
 
       const dataGenerator = schemaToGenerator(this.schema);
@@ -168,8 +169,9 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   context('without an override on a pattern property schema', function () {
     before(function () {
       const dataGenerator = schemaToGenerator({
+        type: 'object',
         patternProperties: {
-          '[ab][cd]': { type: 'string' },
+          '^[ab][cd]$': { type: 'string' },
         },
       });
 
@@ -186,7 +188,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     before(function () {
       const dataGenerator = schemaToGenerator({
         patternProperties: {
-          '[ab][cd]': { type: 'string' },
+          '^[ab][cd]$': { type: 'string' },
         },
       });
 
@@ -462,6 +464,12 @@ describe('index.schemaToGenerator->dataGenerator', function () {
   context('with an override on an "allOf" schema', function () {
     before(function () {
       this.schema = {
+        properties: {
+          field1: true,
+          field2: true,
+        },
+        required: ['field1', 'field2'],
+        additionalProperties: false,
         allOf: [
           {
             type: 'object',
@@ -572,6 +580,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
           'field1',
           'field2',
         ],
+        additionalProperties: false,
       };
 
       const dataGenerator = schemaToGenerator(this.schema);
@@ -619,6 +628,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
             field1: { type: 'string' },
           },
           required: ['field1'],
+          additionalProperties: false,
         };
 
         const dataGenerator = schemaToGenerator(schema);
