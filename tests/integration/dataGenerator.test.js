@@ -285,6 +285,7 @@ describe('index.schemaToGenerator->dataGenerator', function () {
           },
           { type: 'boolean' },
         ],
+        minItems: 4,
       };
 
       const dataGenerator = schemaToGenerator(this.schema);

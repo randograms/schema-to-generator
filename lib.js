@@ -25,6 +25,7 @@ const lib = {
   coerceArrayTupleSchema: (schema, override, schemaPath) => ({
     ...schema,
     items: schema.items.map((tupleItemSchema, index) => lib.coerceSchemaToMatchOverride(tupleItemSchema, override[index], `${schemaPath}[${index}]`)),
+    minItems: Math.max(schema.minItems || 0, override.length),
     additionalItems: false,
   }),
   coerceObjectSchema: (schema, override, schemaPath) => {
