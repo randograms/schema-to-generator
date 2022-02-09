@@ -561,6 +561,134 @@ describe('index.schemaToGenerator->dataGenerator', function () {
     });
   });
 
+  describe('overrides on combined schemas with "const"', function () {
+    context('with a primitive const override', function () {
+      before(function () {
+        this.schema = {
+          oneOf: [
+            {
+              type: 'number',
+              const: 7,
+            },
+            {
+              type: 'number',
+              const: 5,
+            },
+          ],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        this.result = dataGenerator(7);
+      });
+
+      it('returns the number', function () {
+        expect(this.result).to.eq(7);
+      });
+    });
+
+    context('with a property const override', function () {
+      before(function () {
+        this.schema = {
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                foo: {
+                  const: 'hello',
+                },
+                bar: {
+                  type: 'string',
+                },
+              },
+              required: ['foo', 'bar'],
+              additionalProperties: false,
+            },
+            {
+              type: 'object',
+              properties: {
+                foo: {
+                  const: 'hi',
+                },
+                bar: {
+                  type: 'number',
+                },
+              },
+              required: ['foo', 'bar'],
+              additionalProperties: false,
+            },
+          ],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        this.result = dataGenerator({ foo: 'hello' });
+      });
+
+      it('returns data with the overridden value', function () {
+        expect(this.result.foo).to.eq('hello');
+      });
+
+      it('returns data narrowed to a specific schema in the oneOf', function () {
+        expect(this.result.bar).to.be.a('string');
+      });
+    });
+
+    context('with an object const override', function () {
+      before(function () {
+        this.schema = {
+          oneOf: [
+            {
+              type: 'object',
+              const: {
+                foo: 1,
+                bar: 2,
+              },
+            },
+            {
+              type: 'object',
+              const: {
+                foo: 3,
+                bar: 4,
+              },
+            },
+          ],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        this.result = dataGenerator({ foo: 1, bar: 2 });
+      });
+
+      it('returns the const data', function () {
+        expect(this.result).to.eql({ foo: 1, bar: 2 });
+      });
+    });
+
+    context('with a partial object const override', function () {
+      it('throws an error', function () {
+        this.schema = {
+          oneOf: [
+            {
+              type: 'object',
+              const: {
+                foo: 1,
+                bar: 2,
+              },
+            },
+            {
+              type: 'object',
+              const: {
+                foo: 3,
+                bar: 4,
+              },
+            },
+          ],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        expect(() => dataGenerator({ foo: 1 })).to.throw('override<oneOf[0]> does not deep equal "const", override<oneOf[1]> does not deep equal "const"');
+      });
+    });
+  });
+
   context('with nested overrides for a schema without types', function () {
     before(function () {
       this.schema = {
@@ -735,6 +863,56 @@ describe('index.schemaToGenerator->dataGenerator', function () {
       it('does not allow nested data to be mutated', function () {
         this.result[2].field1 = 7;
         expect(this.result[2].field1).to.equal('hello');
+      });
+    });
+  });
+
+  context('with a schema with "const"', function () {
+    context('without an override', function () {
+      before(function () {
+        this.schema = {
+          const: 1,
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        this.result = dataGenerator();
+      });
+
+      it('returns the const value', function () {
+        expect(this.result).to.eq(1);
+      });
+    });
+
+    context('with an override', function () {
+      before(function () {
+        this.schema = {
+          const: { foo: 'bar' },
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        this.result = dataGenerator({ foo: 'bar' });
+      });
+
+      it('returns the const value', function () {
+        expect(this.result).to.eql({ foo: 'bar' });
+      });
+    });
+
+    context('with an invalid override', function () {
+      it('throws an error', function () {
+        this.schema = {
+          properties: {
+            type: 'object',
+            foo: {
+              const: 1,
+            },
+          },
+          required: ['foo'],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+
+        expect(() => dataGenerator({ foo: 5 })).to.throw('override.foo does not deep equal "const"');
       });
     });
   });

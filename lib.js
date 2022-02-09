@@ -95,6 +95,10 @@ const lib = {
         : lib.coerceArrayListSchema(coercedSchema, override, schemaPath);
     }
 
+    if (coercedSchema.const !== undefined && !_.isEqual(coercedSchema.const, override)) {
+      throw new Error(`${schemaPath} does not deep equal "const"`);
+    }
+
     if (coercedSchema.allOf !== undefined) {
       coercedSchema.allOf = lib.coerceAllOf(coercedSchema.allOf, override, schemaPath);
     }
