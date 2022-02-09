@@ -1,6 +1,6 @@
 {
   "name": "@randograms/schema-to-generator",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": "Rachid Lamouri",
   "main": "index.js",
   "license": "MIT",
@@ -18,7 +18,7 @@
     }
   },
   "dependencies": {
-    "@randograms/schema-to-data": "0.1.1",
+    "@randograms/schema-to-data": "0.1.2",
     "ajv": "6.12.0",
     "ansi-colors": "4.1.1",
     "deep-freeze": "0.0.1",
