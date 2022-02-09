@@ -1,3 +1,4 @@
+const { expect } = require('chai');
 const _ = require('lodash');
 const { schemaToGenerator } = require('../../index');
 
@@ -913,6 +914,56 @@ describe('index.schemaToGenerator->dataGenerator', function () {
         const dataGenerator = schemaToGenerator(this.schema);
 
         expect(() => dataGenerator({ foo: 5 })).to.throw('override.foo does not deep equal "const"');
+      });
+    });
+  });
+
+  context('with a schema with an enum', function () {
+    context('without an override', function () {
+      before(function () {
+        this.schema = {
+          enum: [1, 2, 3],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        this.result = dataGenerator();
+      });
+
+      it('returns a random item from the enum', function () {
+        expect([1, 2, 3]).to.include(this.result);
+      });
+    });
+
+    context('with an override', function () {
+      before(function () {
+        this.schema = {
+          enum: [1, 2, 3],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+        this.result = dataGenerator(2);
+      });
+
+      it('returns the overridden value', function () {
+        expect(this.result).to.eq(2);
+      });
+    });
+
+    context('with an invalid override', function () {
+      it('throws an error', function () {
+        this.schema = {
+          properties: {
+            type: 'object',
+            foo: {
+              enum: [1, 2, 3],
+            },
+          },
+          required: ['foo'],
+        };
+
+        const dataGenerator = schemaToGenerator(this.schema);
+
+        expect(() => dataGenerator({ foo: 5 })).to.throw('override.foo does not deep equal a member of "enum"');
       });
     });
   });

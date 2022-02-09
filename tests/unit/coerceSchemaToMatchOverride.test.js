@@ -367,6 +367,48 @@ describe('lib.coerceSchemaToMatchOverride', function () {
     });
   });
 
+  context('with a schema with "enum"', function () {
+    context('and a valid primitive override', function () {
+      it('returns the schema', function () {
+        const schema = { enum: [1, 2, 3] };
+        const result = lib.coerceSchemaToMatchOverride(schema, 2, 'testSchemaPath');
+        expect(result).to.eql({
+          type: 'integer',
+          enum: [2],
+        });
+      });
+    });
+
+    context('and a matching non-primitive override', function () {
+      it('returns the schema', function () {
+        const schema = {
+          enum: [
+            { foo: 1 },
+            { foo: 2 },
+            { foo: 3 },
+          ],
+        };
+        const result = lib.coerceSchemaToMatchOverride(schema, { foo: 2 }, 'testSchemaPath');
+        expect(result).to.eql({
+          type: 'object',
+          enum: [
+            { foo: 2 },
+          ],
+        });
+      });
+    });
+
+    context('a mismatched override', function () {
+      it('throws an error', function () {
+        const testFn = () => {
+          lib.coerceSchemaToMatchOverride({ enum: [1, 2] }, 3, 'testSchemaPath');
+        };
+
+        expect(testFn).to.throw('testSchemaPath does not deep equal a member of "enum"');
+      });
+    });
+  });
+
   context('with a schema with "allOf"', function () {
     before(function () {
       this.allOfArray = Symbol('allOf');

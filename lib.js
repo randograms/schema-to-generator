@@ -99,6 +99,16 @@ const lib = {
       throw new Error(`${schemaPath} does not deep equal "const"`);
     }
 
+    if (coercedSchema.enum !== undefined) {
+      // Using findIndex instead of find since a valid enum value can be falsy which makes it difficult to check for a found value
+      const matchIndex = coercedSchema.enum.findIndex((value) => _.isEqual(override, value));
+      if (matchIndex === -1) {
+        throw new Error(`${schemaPath} does not deep equal a member of "enum"`);
+      }
+
+      coercedSchema.enum = [coercedSchema.enum[matchIndex]];
+    }
+
     if (coercedSchema.allOf !== undefined) {
       coercedSchema.allOf = lib.coerceAllOf(coercedSchema.allOf, override, schemaPath);
     }
@@ -179,7 +189,10 @@ const lib = {
             reset('Original Schema:'),
             green(JSON.stringify(schema, null, 2)),
             validationError,
-            reset('Generated Mock Data:'),
+            reset('Coerced Schema:'),
+            blue(JSON.stringify(coercedSchema, null, 2)),
+            validationError,
+            reset(`Generated Mock Data (${typeof mockData}):`),
             blue(JSON.stringify(mockData, null, 2)),
           ].join('\n');
           throw new Error(errorMessage);
