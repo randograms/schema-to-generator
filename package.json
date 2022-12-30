@@ -31,7 +31,7 @@
     "eslint-plugin-import": "2.20.2",
     "eslint-plugin-mocha": "6.3.0",
     "husky": "4.2.5",
-    "mocha": "7.1.1",
+    "mocha": "10.2.0",
     "sinon": "9.0.2",
     "sinon-chai": "3.5.0"
   }
